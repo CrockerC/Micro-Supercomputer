@@ -15,6 +15,7 @@ import inspect
 # todo, i could implement a thing that lets it detect when a node is lost and divy up its data to the rest to avoid loss of data
 # todo, but idk that seems excessive
 
+# todo, my laptop went to sleep and the master didnt detect it. It also seemed to freeze the whole thing
 def main(task, data, parted=1, inf_generator=None, processed_handler=print):
     if parted == 0 and inf_generator is None:
         raise TypeError("If parted is 0, then there must be an inf_iterator")
@@ -30,6 +31,7 @@ def main(task, data, parted=1, inf_generator=None, processed_handler=print):
     else:
         big_data = inf_generator
 
+    # todo, i think it would be better to pass a file name and then get the stuff from that.
     task_name = task.__name__
     task = inspect.getsource(task)
 
@@ -50,6 +52,7 @@ def main(task, data, parted=1, inf_generator=None, processed_handler=print):
         # todo, i think yes, if only to make sure that the network buffers stay nice and clear
         # todo, i wonder if i should have it order the data in the async thing, or would it be better to simply hand it off to the handler and let it sort it out
         # todo, cause ram usage could be a concern if the data processing increases the size of the data, but shouldn't that be up to the user to deal with?
+        # todo, yeah just add the ordering in the multiple listens. Ram usage is the users problem
         listen = async_listen.multipleListens(nodes.copy())
         for processed, speed, node in listen.loop():
             if not processed:
