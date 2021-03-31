@@ -1,6 +1,4 @@
-import socket
 import threading
-import util
 import typing
 import net_protocol
 

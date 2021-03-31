@@ -16,8 +16,10 @@ import inspect
 # todo, or create a more detailed network protocol that allows one socket to be used for every utility (which is more expandable, but at the same time much more effort)
 # todo, a third option could be to use one socket for the main task, then one for all secondary tasks like ram reporting (which seems to be the best solution)
 
+# todo, give abiliy to install libraries that arent already in the node. This might be somewhat difficult
+
 # todo, i could implement a thing that lets it detect when a node is lost and divy up its data to the rest to avoid loss of data
-# todo, but idk that seems excessive
+# todo, but idk that seems like a bit of an edge case, but for very long running tasks like generating primes, something like that could be important
 
 # todo, my laptop went to sleep and the master didnt detect it. It also seemed to freeze the whole thing
 def main(task, data, parted=1, inf_generator=None, processed_handler=print):

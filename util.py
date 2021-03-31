@@ -1,6 +1,7 @@
 
 
 def inf_iter_primes(num_per_iter=64, range_size=10000):
+    # todo, give this ability to pick a starting point other than 0
     i = 0
     # note that this is not maxing out the cpu on my desktop, so make sure that it does on the pis
     # also note that increasing the size of the range increases the ram usage

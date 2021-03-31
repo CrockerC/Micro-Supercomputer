@@ -26,6 +26,10 @@ class scan_ip:
         return self.node_dict
 
     def __get_lan_type(self):
+        # todo, since the master node will be connected to multiple networks, this needs a way of picking the correct one. I did some messing around with it the other day
+        # todo, check the vcs history for that stuff
+        # todo, i will need to make a function that picks a port to bind to probably, if i understand sockets with multiple networks on the pc properly
+        # todo, i think i have something like that in wormhole
         hostname = socket.gethostname()
         self.ip_address = socket.gethostbyname(hostname)
 
