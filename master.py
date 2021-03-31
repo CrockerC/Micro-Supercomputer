@@ -7,6 +7,8 @@ import async_listen
 import inspect
 
 
+# todo, make better comments before i forget how it all works
+
 # todo, add ability to measure the out/in speed of the network
 # todo, give master a master control over the fans of the nodes
 # todo, have nodes report cpu/ram/network/disk usage back to the master

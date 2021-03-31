@@ -58,14 +58,15 @@ class find_primes_py:
         print('Number of primes found ' + str(len(all_primes)))
         return all_primes
 
-    def multi_pro(self, range):
-        start, stop = range
+    def multi_pro(self, range_):
+        start, stop = range_
         nums = np.arange(start, stop)
         pbools = self.foo(nums)
         primes = np.extract(pbools, nums)
         return list(primes)
 
-    def is_prime(self, n):
+    @staticmethod
+    def is_prime(n):
         if n % 2 == 0 and n > 2:
             return False
         return all(n % i for i in range(3, int(np.sqrt(n)) + 1, 2))
@@ -90,14 +91,15 @@ class find_primes:
         print('Number of primes found ' + str(len(all_primes)))
         return all_primes
 
-    def multi_pro(self, range):
-        start, stop = range
+    def multi_pro(self, range_):
+        start, stop = range_
         nums = np.arange(start, stop)
         pbools = self.foo(nums)
         primes = np.extract(pbools, nums)
         return list(primes)
 
-    def is_prime(self, n):
+    @staticmethod
+    def is_prime(n):
         # note that this method is only deterministic for numbers less than 2^64, above that it may be required to have a deterministic formula double check them
         return sympy.isprime(n)
 
@@ -125,7 +127,8 @@ class find_primes_st:
         print('Number of primes found ' + str(len(all_primes)))
         return all_primes
 
-    def is_prime(self, n):
+    @staticmethod
+    def is_prime(n):
         return sympy.isprime(n)
 
 

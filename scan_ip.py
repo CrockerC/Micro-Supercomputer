@@ -30,10 +30,11 @@ class scan_ip:
         # todo, check the vcs history for that stuff
         # todo, i will need to make a function that picks a port to bind to probably, if i understand sockets with multiple networks on the pc properly
         # todo, i think i have something like that in wormhole
+
+        # i discovered that when using a vpn this doesnt work very well....
         hostname = socket.gethostname()
         self.ip_address = socket.gethostbyname(hostname)
 
-        # i discovered that using a vpn this doesnt work very well....
         start = ipaddress.ip_address(self.ip_address) - self.__ip_radius
         end = ipaddress.ip_address(self.ip_address) + self.__ip_radius
 
