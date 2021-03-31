@@ -20,6 +20,7 @@ class scan_ip:
         self.node_dict = dict()  # format of {'[ip]': socket}
 
         self.__get_lan_type()
+        #print(self.ip_range)
 
     def get_dict(self):
         return self.node_dict
@@ -27,8 +28,11 @@ class scan_ip:
     def __get_lan_type(self):
         hostname = socket.gethostname()
         self.ip_address = socket.gethostbyname(hostname)
+
+        # i discovered that using a vpn this doesnt work very well....
         start = ipaddress.ip_address(self.ip_address) - self.__ip_radius
         end = ipaddress.ip_address(self.ip_address) + self.__ip_radius
+
         self.__ip_type = self.ip_address.split('.')[0]
         if self.__ip_type == '10':
             # i know that this and the 172 have the same code, its left like that in case i want to change it in the future
@@ -96,6 +100,7 @@ class scan_ip:
                     raise ValueError("No response from node! Not adding to list!")
                 if response == self.__response:
                     self.node_dict.update({ip: s})
+                    print("Connected to node {}".format(ip))
                 else:
                     raise ValueError("Wrong response from node! Not adding to list!")
             except socket.timeout:

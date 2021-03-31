@@ -36,7 +36,9 @@ class multipleListens:
     # for data in listen.loop():
     #   handler(data)
     def loop(self):
-        while True:
+        count = 0
+        while count < len(list(self.socks.keys())):
+            count += 1
             # wait for the buffer to be flushed before closing
             if self.close.isSet() and not self.value:
                 return
@@ -51,45 +53,38 @@ class multipleListens:
 
             self.ret.release()  # release the semaphore
 
+        self.exit()
+
     def listen(self, sock, sid):
-        close = False
-        while True:
-            if self.close.isSet() or close:
-                self.close.set()
-                return
+        if self.close.isSet():
+            return
 
-            if self.perf:
-                try:
-                    data, speed = net_protocol.recv_processed(sock, st=True)  # get data from the socket
-                except Exception as ext:
-                    if ext == KeyboardInterrupt:
-                        raise KeyboardInterrupt
-                    data = False
-                    speed = False
-                self.ret.acquire()  # acquire the semaphore
+        if self.perf:
+            try:
+                data, speed = net_protocol.recv_processed(sock, st=True)  # get data from the socket
+            except Exception as ext:
+                if ext == KeyboardInterrupt:
+                    raise KeyboardInterrupt
+                data = False
+                speed = False
 
-                del self.socks[sid]
-                if len(self.socks.keys()) == 0:
-                    close = True
-                self.value.append((data, speed, sid))  # write the data to self.value
+            self.ret.acquire()  # acquire the semaphore
+            self.value.append((data, speed, sid))  # write the data to self.value
 
-            else:
-                try:
-                    data = net_protocol.recv_processed(sock)
-                except Exception as ext:
-                    if ext == KeyboardInterrupt:
-                        raise KeyboardInterrupt
-                    data = False
+        else:
+            try:
+                data = net_protocol.recv_processed(sock)
+            except Exception as ext:
+                if ext == KeyboardInterrupt:
+                    raise KeyboardInterrupt
+                data = False
 
-                self.ret.acquire()
-                del self.socks[sid]
-                if len(self.socks.keys()) == 0:
-                    close = True
-                self.value.append((data, 0, sid))
+            self.ret.acquire()
+            self.value.append((data, 0, sid))
 
-            self.got.set()  # signal that we can now give the value to the caller of self.loop
-            self.ret.release()  # release the semaphore
+        self.got.set()  # signal that we can now give the value to the caller of self.loop
+        self.ret.release()  # release the semaphore
 
-    def close(self):
+    def exit(self):
         self.close.set()
         del self

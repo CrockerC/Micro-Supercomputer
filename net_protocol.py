@@ -14,6 +14,7 @@ def recv_data(sock, timeout=None, st=False):
         return False
     lenData = struct.unpack('>I', lenData)[0]
     data = bytes(__recvall(sock, lenData))
+    data = bz2.decompress(data)
     if timeout is not None:
         sock.settimeout(None)
     if st:
@@ -42,13 +43,13 @@ def addLenU(data):
 # this crashes when the reciever disconnects
 # though it may stop doing that now that its threaded, since the thread will crash and not the main program
 def sendall(sock, data):
-    data = addLenU(data)
+    n_data = bz2.compress(data)
+    data = addLenU(n_data)
     threading.Thread(target=sock.sendall, args=(data,)).start()
 
 
 def send_task(sock, code, task_name, data):
     n_data = pickle.dumps((task_name, code, data))
-    n_data = bz2.compress(n_data)
     sendall(sock, n_data)
 
 
@@ -56,7 +57,6 @@ def recv_task(sock):
     data = recv_data(sock)
     if not data:
         return False, False, False
-    data = bz2.decompress(data)
     return pickle.loads(data)
 
 

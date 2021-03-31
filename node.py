@@ -65,6 +65,7 @@ def do_task(master_con):
         print("Task completed in {}s".format(time.time()-start))
 
         net_protocol.send_processed(master_con, data)
+        print("Sent processed data to master")
         del data, task
 
 
@@ -82,7 +83,7 @@ def listen(s):
                 connected = True
                 print("Connected to master")
             else:
-                master_con.close()
+                master_con.exit()
                 print("Incoming connection failed, waiting for new connection")
         except:
             if master_con:
