@@ -12,6 +12,10 @@ import inspect
 # todo, have nodes report cpu/ram/network/disk usage back to the master
 # todo, have master be able to tell the nodes to restart
 # todo, have the nodes and master be able to detect ram usage? this may not be practical
+# todo, implementing all that stuff will require me to either establish multiple connections with each pi
+# todo, or create a more detailed network protocol that allows one socket to be used for every utility (which is more expandable, but at the same time much more effort)
+# todo, a third option could be to use one socket for the main task, then one for all secondary tasks like ram reporting (which seems to be the best solution)
+
 # todo, i could implement a thing that lets it detect when a node is lost and divy up its data to the rest to avoid loss of data
 # todo, but idk that seems excessive
 
