@@ -13,4 +13,4 @@ if __name__ == "__main__":
     # just making sure that the number of numbers doesnt change every loop
     # for you know, ram
     for thing in inf_iter_primes(4):
-        print(thing[0][1] - thing[0][0])
+        print(thing)

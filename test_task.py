@@ -1,11 +1,13 @@
 import time
 import numpy as np
 import pathos.multiprocessing as mp
-import multiprocessing
-import pathos.pools as pa
-import multiprocess as ms
 import sympy
 import inflect
+
+# todo, https://pypi.org/project/miller-rabin/
+# todo, this library seems to not work for windows
+# todo, but it claims to be about 30x faster than my current thing
+# todo, so when i get this on the pi. Lets give it a try
 
 
 class find_primes_py_st:

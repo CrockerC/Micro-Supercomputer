@@ -1,7 +1,6 @@
 import socket
 import struct
 import dill as pickle
-import inspect
 import bz2
 import threading
 

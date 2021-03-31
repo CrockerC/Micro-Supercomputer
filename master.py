@@ -11,6 +11,10 @@ import inspect
 # todo, give master a master control over the fans of the nodes
 # todo, have nodes report cpu/ram/network/disk usage back to the master
 # todo, have master be able to tell the nodes to restart
+# todo, have the nodes and master be able to detect ram usage? this may not be practical
+# todo, i could implement a thing that lets it detect when a node is lost and divy up its data to the rest to avoid loss of data
+# todo, but idk that seems excessive
+
 def main(task, data, parted=1, inf_generator=None, processed_handler=print):
     if parted == 0 and inf_generator is None:
         raise TypeError("If parted is 0, then there must be an inf_iterator")
@@ -37,8 +41,15 @@ def main(task, data, parted=1, inf_generator=None, processed_handler=print):
         for node, datum in zip(nodes, list(little_data)):
             net_protocol.send_task(nodes[node], task, task_name, [datum])
 
+        # free up ram
+        del little_data
+
         del_list = []
         # get the results from each node asynchronously
+        # todo, does it really need to be asynchronous????
+        # todo, i think yes, if only to make sure that the network buffers stay nice and clear
+        # todo, i wonder if i should have it order the data in the async thing, or would it be better to simply hand it off to the handler and let it sort it out
+        # todo, cause ram usage could be a concern if the data processing increases the size of the data, but shouldn't that be up to the user to deal with?
         listen = async_listen.multipleListens(nodes.copy())
         for processed, speed, node in listen.loop():
             if not processed:

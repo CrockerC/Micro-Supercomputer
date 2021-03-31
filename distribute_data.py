@@ -13,6 +13,7 @@ class distribute_data:
             if i is self.num_nodes-1:
                 start = end + 1
                 yield self.data[start:]
+                break
             start = i * num_data_per_node
             end = (i+1) * num_data_per_node - 1
-            yield self.data[start:end]
+            yield self.data[start:end+1]

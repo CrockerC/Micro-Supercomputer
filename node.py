@@ -65,7 +65,6 @@ def do_task(master_con):
         print("Task completed in {}s".format(time.time()-start))
 
         net_protocol.send_processed(master_con, data)
-        print("Sent processed data to master")
         del data, task
 
 
