@@ -13,8 +13,7 @@ import sympy
 
 def main(port=12321):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    hostname = socket.gethostname()
-    ip_address = socket.gethostbyname(hostname)
+    ip_address = net_protocol.get_ip()
     s.bind((ip_address, port))
     s.listen(1)
 

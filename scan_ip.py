@@ -2,6 +2,7 @@ import socket
 import threading
 import ipaddress
 import net_protocol
+import warnings
 
 
 class scan_ip:
@@ -17,12 +18,31 @@ class scan_ip:
         self.ip_range = tuple()
         self.__ip_type = str()
         self.__ip_space_size = int()
-        self.node_dict = dict()  # format of {'[ip]': socket}
+        self.primary_node_dict = dict()  # format of {'[ip]': socket}
+        self.secondary_node_dict = dict()  # format of {'[ip]': socket}
 
         self.__get_lan_type()
 
-    def get_dict(self):
-        return self.node_dict
+    def get_primary_dict(self):
+        return self.primary_node_dict
+
+    def get_secondary_dict(self):
+        return self.secondary_node_dict
+
+    def __get_secondary_sock(self, ip):
+        start_port = 10000
+        end_port = 50000
+        port = start_port
+        while port <= end_port:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.bind((self.ip_address, port))
+                s.connect((ip, self.__secondary_port))
+                return s
+            except:
+                pass
+        warnings.warn("Unable to establish secondary socket with {}, will be unable to collect secondary data".format(ip))
+        return None
 
     def __get_lan_type(self):
         # todo, since the master node will be connected to multiple networks, this needs a way of picking the correct one. I did some messing around with it the other day
@@ -86,7 +106,7 @@ class scan_ip:
         for thread in threads:
             thread.join()
 
-        return self.get_dict()
+        return self.get_primary_dict()
 
     def __scan_thread(self, ip_range):
         ip_range = self.__ip_range_generator(*ip_range)
@@ -101,7 +121,8 @@ class scan_ip:
                 except socket.timeout:
                     raise ValueError("No response from node! Not adding to list!")
                 if response == self.__response:
-                    self.node_dict.update({ip: s})
+                    self.primary_node_dict.update({ip: s})
+                    self.secondary_node_dict.update({ip: self.__get_secondary_sock(ip)})
                     print("Connected to node {}".format(ip))
                 else:
                     raise ValueError("Wrong response from node! Not adding to list!")
