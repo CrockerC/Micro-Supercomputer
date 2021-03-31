@@ -10,10 +10,11 @@ class multipleListens:
         self.listens = dict()
         self.signalRemove = threading.Event()
 
-        self.ret = threading.Semaphore()  # semaphore to protect self.value
-        self.got = threading.Event()  # signal for self.loop to yeild the data in self.value
-        # self.vSafe = threading.Event()  # signal to self.listen that it is safe to write to self.value
-        self.value = []
+        # self.ret = threading.Semaphore()  # semaphore to protect self.value
+        self.value = {}
+        self.got = {}
+        for key in self.socks:
+            self.got.update({key: threading.Event()})  # signal for self.loop to yield the data in self.value
 
         self.close = threading.Event()
 
@@ -35,21 +36,20 @@ class multipleListens:
     #   handler(data)
     def loop(self):
         count = 0
+        keys = list(self.socks.keys())
         while count < len(list(self.socks.keys())):
+            next_key = keys[count]
             count += 1
             # wait for the buffer to be flushed before closing
             if self.close.isSet() and not self.value:
                 return
 
-            self.got.wait()  # wait until we have data for self.value
-            self.ret.acquire()  # acquire the semaphore
+            self.got[next_key].wait()  # wait until we have data for self.value
+            # self.ret.acquire()  # acquire the semaphore
 
-            yield self.value.pop(0)  # yield the data to the caller
+            yield self.value[next_key]  # yield the data to the caller
 
-            if not self.value:
-                self.got.clear()  # signal that there is no value in self.value
-
-            self.ret.release()  # release the semaphore
+            # self.ret.release()  # release the semaphore
 
         self.exit()
 
@@ -66,8 +66,8 @@ class multipleListens:
                 data = False
                 speed = False
 
-            self.ret.acquire()  # acquire the semaphore
-            self.value.append((data, speed, sid))  # write the data to self.value
+            #self.ret.acquire()  # acquire the semaphore
+            self.value.update({sid: (data, speed, sid)})  # write the data to self.value
 
         else:
             try:
@@ -77,11 +77,11 @@ class multipleListens:
                     raise KeyboardInterrupt
                 data = False
 
-            self.ret.acquire()
-            self.value.append((data, 0, sid))
+            #self.ret.acquire()
+            self.value.update({sid: (data, 0, sid)})  # write the data to self.value
 
-        self.got.set()  # signal that we can now give the value to the caller of self.loop
-        self.ret.release()  # release the semaphore
+        self.got[sid].set()  # signal that we can now give the value to the caller of self.loop
+        # self.ret.release()  # release the semaphore
 
     def exit(self):
         self.close.set()

@@ -24,22 +24,28 @@ import inspect
 # todo, but idk that seems like a bit of an edge case, but for very long running tasks like generating primes, something like that could be important
 
 # todo, my laptop went to sleep and the master didnt detect it. It also seemed to freeze the whole thing
-def main(task, data, parted=1, inf_generator=None, processed_handler=print):
-    if parted == 0 and inf_generator is None:
-        raise TypeError("If parted is 0, then there must be an inf_iterator")
+def main(task, data, parted=0, data_generator=None, processed_handler=print):
+    # parted is how many rounds of processing you want to split your total data into
+    # if parted is 0, it uses the data generator you pass it
+    if parted == 0 and data_generator is None:
+        raise TypeError("If parted is 0, then there must be a data_generator")
+
     ip_scan = scan_ip.scan_ip()
     nodes = ip_scan.scan_space()
     if nodes == {}:
         print("The master could not find any nodes, quitting")
         return
 
-    if parted > 0:
+    if data_generator is None:
+        # note that its best to split this so that there are 16 sets of data per pi (cause 4 cores * 4 for mp pool overhead)
+        # note but this may differ based on your application and whether you use mp pools or not
         big_data = distribute_data.distribute_data(parted, data)
         big_data = list(big_data.split())
     else:
-        big_data = inf_generator
+        big_data = data_generator
 
     # todo, i think it would be better to pass a file name and then get the stuff from that.
+    # todo, so that you dont have to import it, makes it easier to do command line stuff
     task_name = task.__name__
     task = inspect.getsource(task)
 
@@ -56,11 +62,8 @@ def main(task, data, parted=1, inf_generator=None, processed_handler=print):
 
         del_list = []
         # get the results from each node asynchronously
-        # todo, does it really need to be asynchronous????
-        # todo, i think yes, if only to make sure that the network buffers stay nice and clear
-        # todo, i wonder if i should have it order the data in the async thing, or would it be better to simply hand it off to the handler and let it sort it out
-        # todo, cause ram usage could be a concern if the data processing increases the size of the data, but shouldn't that be up to the user to deal with?
-        # todo, yeah just add the ordering in the multiple listens. Ram usage is the users problem
+        # but it also gets them in the same order they were sent out in
+        # i know, its trippy lol
         listen = async_listen.multipleListens(nodes.copy())
         for processed, speed, node in listen.loop():
             if not processed:
@@ -68,9 +71,7 @@ def main(task, data, parted=1, inf_generator=None, processed_handler=print):
                 nodes[node].close()
                 del_list.append(node)
             else:
-                res = processed_handler(processed, node)  # ignore this warning
-                if res:
-                    print(res)
+                processed_handler(processed, node)  # ignore this warning
 
         for de in del_list:
             del nodes[de]
@@ -87,5 +88,5 @@ def tmp_handler(processed, node):
 
 
 if __name__ == "__main__":
-    data = [(i*10000+1, (i+1)*10000) for i in range(10)]
+    data = None
     main(test_task.find_primes, data, 0, util.inf_iter_primes(), processed_handler=tmp_handler)

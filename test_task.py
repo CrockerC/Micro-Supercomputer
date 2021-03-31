@@ -133,24 +133,24 @@ class find_primes_st:
 
 
 if __name__ == "__main__":
-    range_ = (10000000000, 10000010000)
-    ranges = [range_] * (8 * 8)
+    range_test = (10000000000, 10000010000)
+    test_ranges = [range_test] * (8 * 8)
     precision = 4
     p = inflect.engine()
-    print("Calculating primes in the range:\n'{}' \nto \n'{}'".format(p.number_to_words(range_[0]), p.number_to_words(range_[1])))
+    print("Calculating primes in the range:\n'{}' \nto \n'{}'".format(p.number_to_words(range_test[0]), p.number_to_words(range_test[1])))
 
     # run the mp py method
     print("\nCalculating with the multiprocesed py method")
     start = time.time()
-    primes = find_primes_py(ranges)
+    primes = find_primes_py(test_ranges)
     primes.run()
     total = time.time() - start
-    print("It took {}s, which is {}s per 'thread'".format(round(total, precision), round(total / len(ranges), precision)))
+    print("It took {}s, which is {}s per 'thread'".format(round(total, precision), round(total / len(test_ranges), precision)))
 
     print("\nCalculating with the py method")
     # run the sp py method
     start = time.time()
-    primes = find_primes_py_st([range_])
+    primes = find_primes_py_st([range_test])
     primes.run()
     single_time = time.time() - start
     print("It took {}s".format(round(single_time, precision)))
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     print("\nCalculating with the sy method")
     # run the sp sy method
     start = time.time()
-    primes = find_primes_st([range_])
+    primes = find_primes_st([range_test])
     primes.run()
     sy_single_time = time.time() - start
     print("It took {}s".format(round(sy_single_time, precision)))
@@ -166,19 +166,19 @@ if __name__ == "__main__":
     print("\nCalculating with the multiprocesed sy method")
     # run the mp sy method
     start = time.time()
-    primes = find_primes(ranges)
+    primes = find_primes(test_ranges)
     primes.run()
     sy_total = time.time() - start
-    print("It took {}s, which is {}s per 'thread'\n".format(round(sy_total, precision), round(sy_total / len(ranges), precision)))
+    print("It took {}s, which is {}s per 'thread'\n".format(round(sy_total, precision), round(sy_total / len(test_ranges), precision)))
 
-    sy_average = sy_total / len(ranges)
+    sy_average = sy_total / len(test_ranges)
     mp_ratio_sy = round(sy_single_time / sy_average, precision)
     # print("the single threaded method time was {}s, the average time for the multithreaded method was {}s".format(round(sy_single_time, 3), round(sy_total / len(ranges), 3)))
-    print("The mp ratio for the sy method with {} 'threads' is {}\n".format(len(ranges), mp_ratio_sy))
+    print("The mp ratio for the sy method with {} 'threads' is {}\n".format(len(test_ranges), mp_ratio_sy))
 
-    avg_time = total / len(ranges)
+    avg_time = total / len(test_ranges)
     mp_ratio = round(single_time / avg_time, precision)
     # print("the single threaded method time was {}s, the average time for the multithreaded method was {}s".format(round(single_time, 3), round(avg_time, 3)))
-    print("The mp ratio with for the py {} 'threads' is {}\n".format(len(ranges), mp_ratio))
+    print("The mp ratio with for the py {} 'threads' is {}\n".format(len(test_ranges), mp_ratio))
 
-    print("Dispite the mp ratio of the sy method being {}% of the py method, the sy multicore method was {}x faster than the py multicore".format(round(mp_ratio_sy / mp_ratio*100, precision), round(total / sy_total, precision)))
+    print("Dispite the mp ratio of the sy method being only {}% of the py method, the sy multicore method was {}x faster than the py multicore".format(round(mp_ratio_sy / mp_ratio*100, precision), round(total / sy_total, precision)))
