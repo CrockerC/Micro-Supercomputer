@@ -2,25 +2,24 @@ import socket
 import threading
 import ipaddress
 import net_protocol
-import time
 
 
 class scan_ip:
-    def __init__(self, ip_radius=4001, port=12321, num_threads=500):
+    def __init__(self, ip_radius=4001, port=12321, secondary_port=12322, num_threads=500):
         self.__port = port
+        self.__secondary_port = secondary_port
         self.__ip_radius = ip_radius
         self.__num_threads = num_threads  # note that there will likely be 1 more thread than listed here
         self.__call = bytes("x gon", 'utf-8')
         self.__response = bytes("give it to ya", 'utf-8')
 
-        self.ip_address = str()
+        self.ip_address = net_protocol.get_ip()
         self.ip_range = tuple()
         self.__ip_type = str()
         self.__ip_space_size = int()
         self.node_dict = dict()  # format of {'[ip]': socket}
 
         self.__get_lan_type()
-        #print(self.ip_range)
 
     def get_dict(self):
         return self.node_dict
@@ -32,8 +31,6 @@ class scan_ip:
         # todo, i think i have something like that in wormhole
 
         # i discovered that when using a vpn this doesnt work very well....
-        hostname = socket.gethostname()
-        self.ip_address = socket.gethostbyname(hostname)
 
         start = ipaddress.ip_address(self.ip_address) - self.__ip_radius
         end = ipaddress.ip_address(self.ip_address) + self.__ip_radius

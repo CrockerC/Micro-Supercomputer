@@ -3,6 +3,27 @@ import struct
 import dill as pickle
 import bz2
 import threading
+import psutil
+import warnings
+
+
+def get_ip():
+    adapters = psutil.net_if_addrs()
+
+    # ethernet has priority over wifi
+    if "Ethernet" in adapters:
+        adapter = "Ethernet"
+    elif "Wi-Fi" in adapters:
+        warnings.warn("Using Wifi instead of ethernet! This can be dangerous if the wifi network is connected to the internet!")
+        adapter = "Wi-Fi"
+    else:
+        warnings.warn("Cannot find ethernet or wifi adapter! Defaulting to socket.gethostname()")
+        hostname = socket.gethostname()
+        return socket.gethostbyname(hostname)
+
+    for type in adapters[adapter]:
+        if type is socket.AF_INET:
+            return type.address
 
 
 def recv_data(sock, timeout=None, st=False):
