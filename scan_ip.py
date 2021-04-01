@@ -29,19 +29,22 @@ class scan_ip:
     def get_secondary_dict(self):
         return self.secondary_node_dict
 
-    def __get_secondary_sock(self, ip):
+    def __get_socket(self):
         start_port = 10000
         end_port = 50000
         port = start_port
+        s = None
         while port <= end_port:
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(.01)
                 s.bind((self.ip_address, port))
-                s.connect((ip, self.__secondary_port))
+                s.settimeout(None)
                 return s
             except:
-                pass
-        warnings.warn("Unable to establish secondary socket with {}, will be unable to collect secondary data".format(ip))
+                if s:
+                    s.close()
+            port += 1
         return None
 
     def __get_lan_type(self):
@@ -111,7 +114,7 @@ class scan_ip:
     def __scan_thread(self, ip_range):
         ip_range = self.__ip_range_generator(*ip_range)
         for ip in ip_range:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s = self.__get_socket()
             s.settimeout(.05)
             try:
                 s.connect((ip, self.__port))
@@ -122,12 +125,17 @@ class scan_ip:
                     raise ValueError("No response from node! Not adding to list!")
                 if response == self.__response:
                     self.primary_node_dict.update({ip: s})
-                    self.secondary_node_dict.update({ip: self.__get_secondary_sock(ip)})
+
+                    s = self.__get_socket()
+                    s.settimeout(.05)
+                    s.connect((ip, self.__secondary_port))
+
+                    self.secondary_node_dict.update({ip: s})
                     print("Connected to node {}".format(ip))
                 else:
                     raise ValueError("Wrong response from node! Not adding to list!")
             except socket.timeout:
-                pass
+                s.close()
             except OSError as err:
                 print((ip, self.__port), err)
 

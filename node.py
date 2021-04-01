@@ -10,27 +10,40 @@ import sympy
 
 # todo, add timestamps to logs
 
+# todo, right now there is no secondary data reporting, so the secondary_con is not used
+# todo, don't delete it lol
 
-def main(port=12321):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# todo speed up downtime between tasks
+
+
+def main(primary_port=12321, secondary_port=12322):
+    primary_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     ip_address = net_protocol.get_ip()
-    s.bind((ip_address, port))
-    s.listen(1)
+    primary_sock.bind((ip_address, primary_port))
+    primary_sock.listen(1)
+
+    secondary_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    ip_address = net_protocol.get_ip()
+    secondary_sock.bind((ip_address, secondary_port))
+    secondary_sock.listen(1)
 
     print("Waiting for connection to master")
     while True:
         try:
-            master_con = listen(s)
-            do_task(master_con)
+            master_con, secondary_con = listen(primary_sock, secondary_sock)
+            do_task(master_con, ip_address)
         except KeyboardInterrupt:
             print("Cancelled by user!")
             break
     # the node is now added and ready to accept tasks
 
 
-def do_task(master_con):
+def do_task(master_con, ip):
     while True:
+        t1 = time.time()
         name, task, data = net_protocol.recv_task(master_con)
+        recv_time = time.time() - t1
+        print("Time spent waiting on the task: {:.3f}s".format(recv_time))
 
         if not task:
             print("Lost connection to master, listening for connection")
@@ -61,23 +74,28 @@ def do_task(master_con):
 
         start = time.time()
         data = task.run()
-        print("Task completed in {}s".format(time.time()-start))
+        print("Task completed in {:.3f}s".format(time.time()-start))
 
-        net_protocol.send_processed(master_con, data)
+        t1 = time.time()
+        net_protocol.send_processed(master_con, data, ip)
+        send_time = time.time() - t1
+        print("Time spent sending processed data {:.3f}s".format(send_time))
         del data, task
 
 
-def listen(s):
+def listen(primary_sock, secondary_sock):
     call = bytes("x gon", 'utf-8')
     response = bytes("give it to ya", 'utf-8')
     connected = False
     master_con = None
+    secondary_con = None
     while not connected:
         try:
-            master_con, addr = s.accept()
+            master_con, addr = primary_sock.accept()
             mess = net_protocol.recv_data(master_con)
             if mess == call:
                 net_protocol.sendall(master_con, response)
+                secondary_con, addr = secondary_sock.accept()
                 connected = True
                 print("Connected to master")
             else:
@@ -86,9 +104,12 @@ def listen(s):
         except:
             if master_con:
                 master_con.close()
+
+            if secondary_con:
+                secondary_con.close()
             print("Incoming connection failed, waiting for new connection")
 
-    return master_con
+    return master_con, secondary_con
 
 
 if __name__ == "__main__":

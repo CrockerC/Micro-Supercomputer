@@ -4,22 +4,17 @@ import net_protocol
 
 
 class multipleListens:
-    def __init__(self, socks: typing.Dict, perf=False):
+    def __init__(self, socks: typing.Dict):
         self.socks = socks
-        self.perf = perf
         self.listens = dict()
         self.signalRemove = threading.Event()
 
-        # self.ret = threading.Semaphore()  # semaphore to protect self.value
         self.value = {}
         self.got = {}
         for key in self.socks:
             self.got.update({key: threading.Event()})  # signal for self.loop to yield the data in self.value
 
         self.close = threading.Event()
-
-        # self.vSafe.set()
-
         self.updateListens()
 
     def updateListens(self):
@@ -45,43 +40,21 @@ class multipleListens:
                 return
 
             self.got[next_key].wait()  # wait until we have data for self.value
-            # self.ret.acquire()  # acquire the semaphore
-
             yield self.value[next_key]  # yield the data to the caller
-
-            # self.ret.release()  # release the semaphore
-
         self.exit()
 
     def listen(self, sock, sid):
         if self.close.isSet():
             return
+        try:
+            data = net_protocol.recv_processed(sock)
+        except Exception as ext:
+            if ext == KeyboardInterrupt:
+                raise KeyboardInterrupt
+            data = False
 
-        if self.perf:
-            try:
-                data, speed = net_protocol.recv_processed(sock, st=True)  # get data from the socket
-            except Exception as ext:
-                if ext == KeyboardInterrupt:
-                    raise KeyboardInterrupt
-                data = False
-                speed = False
-
-            #self.ret.acquire()  # acquire the semaphore
-            self.value.update({sid: (data, speed, sid)})  # write the data to self.value
-
-        else:
-            try:
-                data = net_protocol.recv_processed(sock)
-            except Exception as ext:
-                if ext == KeyboardInterrupt:
-                    raise KeyboardInterrupt
-                data = False
-
-            #self.ret.acquire()
-            self.value.update({sid: (data, 0, sid)})  # write the data to self.value
-
+        self.value.update({sid: (data, sid)})  # write the data to self.value
         self.got[sid].set()  # signal that we can now give the value to the caller of self.loop
-        # self.ret.release()  # release the semaphore
 
     def exit(self):
         self.close.set()

@@ -21,15 +21,15 @@ class find_primes_py_st:
 
         all_primes = []
         for start, stop in self.ranges:
-            nums = numpy.arange(start, stop)
+            nums = list(range(start, stop))
             pbools = foo(nums)
-            primes = numpy.extract(pbools, nums)
+            primes = [num for num, boo in zip(nums, pbools) if boo]
             all_primes += list(primes)
 
         # Display the results, uncomment the last to list the prime numbers found
         # print('Find all primes up to: ' + str(self.end_number))
         # print('Time elasped: ' + str(end) + ' seconds')
-        print('Number of primes found ' + str(len(all_primes)))
+        # print('Number of primes found ' + str(len(all_primes)))
         return all_primes
 
     def is_prime(self, n):
@@ -55,14 +55,14 @@ class find_primes_py:
         for res in results:
             all_primes += res
 
-        print('Number of primes found ' + str(len(all_primes)))
+        # print('Number of primes found ' + str(len(all_primes)))
         return all_primes
 
     def multi_pro(self, range_):
         start, stop = range_
-        nums = np.arange(start, stop)
+        nums = list(range(start, stop))
         pbools = self.foo(nums)
-        primes = np.extract(pbools, nums)
+        primes = [num for num, boo in zip(nums, pbools) if boo]
         return list(primes)
 
     @staticmethod
@@ -88,15 +88,14 @@ class find_primes:
         for res in results:
             all_primes += res
 
-        print('Number of primes found ' + str(len(all_primes)))
         return all_primes
 
     def multi_pro(self, range_):
         start, stop = range_
-        nums = np.arange(start, stop)
+        nums = list(range(start, stop))
         pbools = self.foo(nums)
-        primes = np.extract(pbools, nums)
-        return list(primes)
+        primes = [num for num, boo in zip(nums, pbools) if boo]
+        return primes
 
     @staticmethod
     def is_prime(n):
@@ -116,15 +115,15 @@ class find_primes_st:
 
         all_primes = []
         for start, stop in self.ranges:
-            nums = numpy.arange(start, stop)
+            nums = list(range(start, stop))
             pbools = foo(nums)
-            primes = numpy.extract(pbools, nums)
+            primes = [num for num, boo in zip(nums, pbools) if boo]
             all_primes += list(primes)
 
         # Display the results, uncomment the last to list the prime numbers found
         # print('Find all primes up to: ' + str(self.end_number))
         # print('Time elasped: ' + str(end) + ' seconds')
-        print('Number of primes found ' + str(len(all_primes)))
+        #print('Number of primes found ' + str(len(all_primes)))
         return all_primes
 
     @staticmethod
@@ -133,7 +132,7 @@ class find_primes_st:
 
 
 if __name__ == "__main__":
-    range_test = (10000000000, 10000010000)
+    range_test = (1000000000, 1000010000)
     test_ranges = [range_test] * (8 * 8)
     precision = 4
     p = inflect.engine()

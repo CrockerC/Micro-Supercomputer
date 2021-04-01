@@ -56,7 +56,7 @@ def main(task, data, parted=0, data_generator=None, processed_handler=print):
 
         # send each node's data to it
         for node, datum in zip(nodes, list(little_data)):
-            net_protocol.send_task(nodes[node], task, task_name, [datum])
+            net_protocol.send_task(nodes[node], task_name, task, [datum])
 
         # free up ram
         del little_data
@@ -66,7 +66,7 @@ def main(task, data, parted=0, data_generator=None, processed_handler=print):
         # but it also gets them in the same order they were sent out in
         # i know, its trippy lol
         listen = async_listen.multipleListens(nodes.copy())
-        for processed, speed, node in listen.loop():
+        for processed, node in listen.loop():
             if not processed:
                 print("Lost connection to node '{}'".format(node))
                 nodes[node].close()
@@ -85,7 +85,7 @@ def main(task, data, parted=0, data_generator=None, processed_handler=print):
 
 
 def tmp_handler(processed, node):
-    print(processed[node][-1])
+    print(processed[node][-1], len(processed[node]))
 
 
 if __name__ == "__main__":

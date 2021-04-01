@@ -1,15 +1,16 @@
 import socket
 import struct
-import dill as pickle
-import bz2
+#import bz2
 import threading
 import psutil
 import warnings
+import time
+import json
+import brotli
 
 
 def get_ip():
     adapters = psutil.net_if_addrs()
-
     # ethernet has priority over wifi
     if "Ethernet" in adapters:
         adapter = "Ethernet"
@@ -21,12 +22,12 @@ def get_ip():
         hostname = socket.gethostname()
         return socket.gethostbyname(hostname)
 
-    for type in adapters[adapter]:
-        if type is socket.AF_INET:
-            return type.address
+    for prot in adapters[adapter]:
+        if prot.family is socket.AF_INET:
+            return prot.address
 
 
-def recv_data(sock, timeout=None, st=False):
+def recv_data(sock, timeout=None):
     if timeout is not None:
         sock.settimeout(timeout)
     lenData = __recvall(sock, 4)
@@ -34,13 +35,10 @@ def recv_data(sock, timeout=None, st=False):
         return False
     lenData = struct.unpack('>I', lenData)[0]
     data = bytes(__recvall(sock, lenData))
-    data = bz2.decompress(data)
+    data = brotli.decompress(data)
     if timeout is not None:
         sock.settimeout(None)
-    if st:
-        return data, lenData+4  # lenData+4 in bytes
-    else:
-        return data
+    return data
 
 
 def __recvall(sock, n):
@@ -62,34 +60,38 @@ def addLenU(data):
 
 # this crashes when the reciever disconnects
 # though it may stop doing that now that its threaded, since the thread will crash and not the main program
+# do threads have crash signals that i can listen for to detect the disconnection?
 def sendall(sock, data):
-    n_data = bz2.compress(data)
-    data = addLenU(n_data)
+    # there is a good reason why the json.dumps is not here, please dont put it here
+    if isinstance(data, str):
+        data = bytes(data, "utf-8")
+    data = brotli.compress(data, quality=1)
+    data = addLenU(data)
     threading.Thread(target=sock.sendall, args=(data,)).start()
 
 
-def send_task(sock, code, task_name, data):
-    n_data = pickle.dumps((task_name, code, data))
-    sendall(sock, n_data)
+def send_task(sock, task_name, code, data):
+    data = json.dumps((task_name, code, data))
+    sendall(sock, data)
 
 
 def recv_task(sock):
     data = recv_data(sock)
     if not data:
         return False, False, False
-    return pickle.loads(data)
+
+    return json.loads(data)
 
 
-def send_processed(sock, data):
-    id = socket.gethostbyname(socket.gethostname())
-    data = pickle.dumps({id: data})
+def send_processed(sock, data, nid):
+    data = json.dumps({nid: data})
     sendall(sock, data)
 
 
-def recv_processed(sock, timeout=None, st=False):
+def recv_processed(sock, timeout=None):
     sock.settimeout(timeout)
-    data = recv_data(sock, st=st)
+    data = recv_data(sock)
     if data:
-        return pickle.loads(data)
+        return json.loads(data)
     else:
         return False
