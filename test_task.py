@@ -10,6 +10,9 @@ import inflect
 # todo, so when i get this on the pi. Lets give it a try
 
 
+# todo, replicate the code from here https://github.com/sympy/sympy/blob/master/sympy/ntheory/primetest.py
+# todo, so i dont have to import the whole damn library for a single thing
+
 class find_primes_py_st:
     def __init__(self, ranges):
         self.ranges = ranges

@@ -1,8 +1,8 @@
 
 
-def inf_iter_primes(num_per_iter=64, range_size=10000):
-    # todo, give this ability to pick a starting point other than 0
-    i = 0
+def inf_iter_primes(num_per_node=64, num_nodes=1, range_size=10000, start_number=0):
+    num_per_iter = num_nodes * num_per_node
+    i = start_number // range_size
     # note that this is not maxing out the cpu on my desktop, so make sure that it does on the pis
     # also note that increasing the size of the range increases the ram usage
     while True:

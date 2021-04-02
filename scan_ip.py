@@ -2,7 +2,8 @@ import socket
 import threading
 import ipaddress
 import net_protocol
-import warnings
+import time
+import random
 
 
 class scan_ip:
@@ -32,9 +33,12 @@ class scan_ip:
     def __get_socket(self):
         start_port = 10000
         end_port = 50000
-        port = start_port
         s = None
-        while port <= end_port:
+        timeout = 30
+        start = time.time()
+        # doing this with random numbers makes it faster than being procedural
+        while time.time() - start < timeout:
+            port = random.randint(start_port, end_port)
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.settimeout(.01)
@@ -48,11 +52,6 @@ class scan_ip:
         return None
 
     def __get_lan_type(self):
-        # todo, since the master node will be connected to multiple networks, this needs a way of picking the correct one. I did some messing around with it the other day
-        # todo, check the vcs history for that stuff
-        # todo, i will need to make a function that picks a port to bind to probably, if i understand sockets with multiple networks on the pc properly
-        # todo, i think i have something like that in wormhole
-
         # i discovered that when using a vpn this doesnt work very well....
 
         start = ipaddress.ip_address(self.ip_address) - self.__ip_radius

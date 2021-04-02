@@ -13,8 +13,6 @@ import sympy
 # todo, right now there is no secondary data reporting, so the secondary_con is not used
 # todo, don't delete it lol
 
-# todo speed up downtime between tasks
-
 
 def main(primary_port=12321, secondary_port=12322):
     primary_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,9 +39,11 @@ def main(primary_port=12321, secondary_port=12322):
 def do_task(master_con, ip):
     while True:
         t1 = time.time()
-        name, task, data = net_protocol.recv_task(master_con)
-        recv_time = time.time() - t1
+        name, task, data, data_speed_MBs = net_protocol.recv_task(master_con)
+        recv_time = time.time() - t1 + .0000001
         print("Time spent waiting on the task: {:.3f}s".format(recv_time))
+        # note that this includes waiting for the socket to get data
+        print("The protocol communication recv overhead went at {:.4f}MB/s".format(data_speed_MBs))
 
         if not task:
             print("Lost connection to master, listening for connection")
@@ -77,9 +77,11 @@ def do_task(master_con, ip):
         print("Task completed in {:.3f}s".format(time.time()-start))
 
         t1 = time.time()
-        net_protocol.send_processed(master_con, data, ip)
-        send_time = time.time() - t1
+        data_speed_MBs = net_protocol.send_processed(master_con, data, ip)
+        send_time = time.time() - t1 + .0000001
         print("Time spent sending processed data {:.3f}s".format(send_time))
+        print("The protocol communication send overhead went at {:.4f}MB/s".format(data_speed_MBs))
+
         del data, task
 
 

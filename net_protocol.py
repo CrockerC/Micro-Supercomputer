@@ -1,6 +1,5 @@
 import socket
 import struct
-#import bz2
 import threading
 import psutil
 import warnings
@@ -54,6 +53,19 @@ def __recvall(sock, n):
     return data
 
 
+def recv_data_no_decompress(sock, timeout=None):
+    if timeout is not None:
+        sock.settimeout(timeout)
+    lenData = __recvall(sock, 4)
+    if not lenData:
+        return False
+    lenData = struct.unpack('>I', lenData)[0]
+    data = bytes(__recvall(sock, lenData))
+    if timeout is not None:
+        sock.settimeout(None)
+    return data
+
+
 def addLenU(data):
     return struct.pack('>I', len(data)) + data
 
@@ -62,30 +74,47 @@ def addLenU(data):
 # though it may stop doing that now that its threaded, since the thread will crash and not the main program
 # do threads have crash signals that i can listen for to detect the disconnection?
 def sendall(sock, data):
-    # there is a good reason why the json.dumps is not here, please dont put it here
+    # there is a good reason why the json.dumps is not here, please don't put it here
     if isinstance(data, str):
         data = bytes(data, "utf-8")
+    size = len(data)
     data = brotli.compress(data, quality=1)
     data = addLenU(data)
     threading.Thread(target=sock.sendall, args=(data,)).start()
+    return size  # the size BEFORE compression
 
 
 def send_task(sock, task_name, code, data):
     data = json.dumps((task_name, code, data))
-    sendall(sock, data)
+    return sendall(sock, data)
 
 
-def recv_task(sock):
-    data = recv_data(sock)
+def recv_task(sock, perf=True):
+    data = recv_data_no_decompress(sock)
+    if perf:
+        start = time.perf_counter()
+
     if not data:
-        return False, False, False
+        return False, False, False, False
+    size = len(data)
+    data = brotli.decompress(data)
 
-    return json.loads(data)
+    name, task, data = json.loads(data)
+    if perf:
+        recv_time = time.perf_counter() - start + .00000001
+        return name, task, data, size / (1024 * 1024) / recv_time
+    return name, task, data, 0
 
 
-def send_processed(sock, data, nid):
+def send_processed(sock, data, nid, perf=True):
+    if perf:
+        start = time.perf_counter()
     data = json.dumps({nid: data})
-    sendall(sock, data)
+    size = sendall(sock, data)
+    if perf:
+        send_time = time.perf_counter() - start + .00000001
+        return size / (1024 * 1024) / send_time
+    return 0
 
 
 def recv_processed(sock, timeout=None):

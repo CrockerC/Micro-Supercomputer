@@ -5,6 +5,10 @@ import distribute_data
 import util
 import async_listen
 import inspect
+import psutil
+
+CPU_COUNT = psutil.cpu_count(logical=False)
+THREAD_COUNT = CPU_COUNT ** 2
 
 
 # todo, make better comments before i forget how it all works
@@ -22,16 +26,22 @@ import inspect
 
 # todo, i could implement a thing that lets it detect when a node is lost and divy up its data to the rest to avoid loss of data
 # todo, but idk that seems like a bit of an edge case, but for very long running tasks like generating primes, something like that could be important
+# todo, wait dont have it divy up the work, just give it to a node, giving it to all of them is unncessarily complicated
+# todo, thatll be part of v2
+
+# todo, need to add ability to install packages through the master
+
+# todo, do lots of analytics like mb/s for overheads and shit
 
 # todo, my laptop went to sleep and the master didnt detect it. It also seemed to freeze the whole thing
-def main(task, data, parted=0, data_generator=None, processed_handler=print):
-    # parted is how many rounds of processing you want to split your total data into
-    # if parted is 0, it uses the data generator you pass it
-    if parted == 0 and data_generator is None:
-        raise TypeError("If parted is 0, then there must be a data_generator")
 
-    ip_scan = scan_ip.scan_ip()
-    nodes = ip_scan.scan_space()
+# todo, implement timestamps and logging for everything
+# todo, strftime("[%m/%d/%Y %H:%M:%S]", time.localtime()) gives this [04/02/2021 00:53:24]
+# todo, there is also probably a logging library
+def main(task, data, data_generator=None, processed_handler=print):
+    # parted is how many rounds of processing you want to split your total data into
+
+    nodes = scan_ip.scan_ip().scan_space()
     if nodes == {}:
         print("The master could not find any nodes, quitting")
         return
@@ -39,10 +49,10 @@ def main(task, data, parted=0, data_generator=None, processed_handler=print):
     if data_generator is None:
         # note that its best to split this so that there are 16 sets of data per pi (cause 4 cores * 4 for mp pool overhead)
         # note but this may differ based on your application and whether you use mp pools or not
-        big_data = distribute_data.distribute_data(parted, data)
+        big_data = distribute_data.distribute_data(len(nodes), data)
         big_data = list(big_data.split())
     else:
-        big_data = data_generator
+        big_data = data_generator(num_per_node=THREAD_COUNT, num_nodes=len(nodes))
 
     # todo, i think it would be better to pass a file name and then get the stuff from that.
     # todo, so that you dont have to import it, makes it easier to do command line stuff
@@ -54,7 +64,8 @@ def main(task, data, parted=0, data_generator=None, processed_handler=print):
         little_data = distribute_data.distribute_data(len(nodes.keys()), little_data)
         little_data = little_data.split()
 
-        # send each node's data to it
+        # send each node's data to it synchronously
+        # in v2 itll do it asynchronously, although idk how ill handle ordering
         for node, datum in zip(nodes, list(little_data)):
             net_protocol.send_task(nodes[node], task_name, task, [datum])
 
@@ -90,4 +101,4 @@ def tmp_handler(processed, node):
 
 if __name__ == "__main__":
     data = None
-    main(test_task.find_primes, data, 0, util.inf_iter_primes(), processed_handler=tmp_handler)
+    main(test_task.find_primes, data, util.inf_iter_primes, processed_handler=tmp_handler)
