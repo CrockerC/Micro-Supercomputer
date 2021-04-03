@@ -36,6 +36,7 @@ THREAD_COUNT = CPU_COUNT ** 2
 # todo, implement timestamps and logging for everything
 # todo, strftime("[%m/%d/%Y %H:%M:%S]", time.localtime()) gives this [04/02/2021 00:53:24]
 # todo, there is also probably a logging library
+
 def main(task, data, data_generator=None, processed_handler=print, **kwargs):
     # parted is how many rounds of processing you want to split your total data into
 
@@ -66,6 +67,7 @@ def main(task, data, data_generator=None, processed_handler=print, **kwargs):
         # in v2 itll do it asynchronously, although idk how ill handle ordering
         sizes = []
         times = []
+        # todo, thread this, either with a thread pool or a special object
         for node, datum in zip(nodes, list(little_data)):
             data_size, data_time = net_protocol.send_task(nodes[node], task_name, task, [datum])
             sizes.append(data_size)
@@ -84,26 +86,29 @@ def main(task, data, data_generator=None, processed_handler=print, **kwargs):
         listen = async_listen.multipleListens(nodes.copy())
         sizes = []
         times = []
+
+        # todo, these measurements are wrong, since its threaded but its acting like its not
         for processed, node in listen.loop():
+            processed, data_size, data_time = processed
             if not processed:
                 print("Lost connection to node '{}'".format(node))
                 nodes[node].close()
                 del_list.append(node)
             else:
-                processed, data_size, data_time = processed
                 sizes.append(data_size)
                 times.append(data_time)
                 processed_handler(processed, node)
 
-        avg_size = sum(sizes) / len(sizes)
-        avg_time = sum(times) / len(times)
-        print("The protocol communication recv overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / avg_time, sum(times)))
         for de in del_list:
             del nodes[de]
 
         if len(nodes.keys()) == 0:
             print("There are no nodes connected to the master, quitting")
             return
+
+        avg_size = sum(sizes) / len(sizes)
+        avg_time = sum(times) / len(times)
+        print("The protocol communication recv overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / avg_time, sum(times)))
 
     input("Press enter to exit")
 
