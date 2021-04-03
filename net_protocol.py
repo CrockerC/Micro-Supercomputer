@@ -115,12 +115,8 @@ def recv_task(sock, perf=True):
 def send_processed(sock, data, nid, perf=True):
     if perf:
         start = time.perf_counter()
-    n = time.perf_counter()
     data = json.dumps({nid: data})
-    print(time.perf_counter() - n)
-    n = time.perf_counter()
     size = sendall(sock, data)
-    print(time.perf_counter() - n)
     if perf:
         send_time = time.perf_counter() - start + .0000001
         return size / (1024 * 1024), send_time
@@ -137,12 +133,8 @@ def recv_processed(sock, timeout=None, perf=True):
         start = time.perf_counter()
 
     size = len(data)
-    n = time.perf_counter()
     data = zstd.decompress(data)
-    print(time.perf_counter() - n)
-    n = time.perf_counter()
     data = json.loads(data)
-    print(time.perf_counter() - n)
     if perf:
         recv_time = time.perf_counter() - start + .0000001
         return data, size / (1024 * 1024), recv_time
