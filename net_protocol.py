@@ -6,43 +6,49 @@ import warnings
 import time
 import orjson as json
 import zstd
+import sys
 
 
 def get_ip():
     adapters = psutil.net_if_addrs()
-    # ethernet has priority over wifi
-    if "Ethernet" in adapters:
-        adapter = "Ethernet"
-    elif "Wi-Fi" in adapters:
-        warnings.warn("Using Wifi instead of ethernet! This can be dangerous if the wifi network is connected to the internet!")
-        adapter = "Wi-Fi"
-    else:
-        warnings.warn("Cannot find ethernet or wifi adapter! Defaulting to socket.gethostname()")
-        hostname = socket.gethostname()
-        return socket.gethostbyname(hostname)
 
-    for prot in adapters[adapter]:
-        if prot.family is socket.AF_INET:
-            return prot.address
-        
+    if sys.platform == "win32":
         # ethernet has priority over wifi
-    adapter = None
-    if "eth0" in adapters:
-        for addr_type in adapters["eth0"]:
-            if addr_type.family is socket.AF_INET:
-                print("using ethernet")
-                return addr_type.address
-            
-    if "wlan0" in adapters:
-        for addr_type in adapters["wlan0"]:
-            if addr_type.family is socket.AF_INET:
-                print("using wifi")
-                return addr_type.address
-    
-    if not adapter:
-        warnings.warn("Cannot find ethernet or wifi adapter! Defaulting to socket.gethostname()")
-        hostname = socket.gethostname()
-        return socket.gethostbyname(hostname)
+        if "Ethernet" in adapters:
+            adapter = "Ethernet"
+        elif "Wi-Fi" in adapters:
+            warnings.warn("Using Wifi instead of ethernet! This can be dangerous if the wifi network is connected to the internet!")
+            adapter = "Wi-Fi"
+        else:
+            warnings.warn("Cannot find ethernet or wifi adapter! Defaulting to socket.gethostname()")
+            hostname = socket.gethostname()
+            return socket.gethostbyname(hostname)
+
+        for prot in adapters[adapter]:
+            if prot.family is socket.AF_INET:
+                return prot.address
+
+    elif sys.platform == "linux":
+        adapter = None
+        if "eth0" in adapters:
+            for addr_type in adapters["eth0"]:
+                if addr_type.family is socket.AF_INET:
+                    print("using ethernet")
+                    return addr_type.address
+
+        if "wlan0" in adapters:
+            for addr_type in adapters["wlan0"]:
+                if addr_type.family is socket.AF_INET:
+                    print("using wifi")
+                    return addr_type.address
+
+        if not adapter:
+            warnings.warn("Cannot find ethernet or wifi adapter! Defaulting to socket.gethostname()")
+            hostname = socket.gethostname()
+            return socket.gethostbyname(hostname)
+
+    else:
+        raise Exception("This is only compatible with windows and linux!")
 
 
 def recv_data(sock, timeout=None):
