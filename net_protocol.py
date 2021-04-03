@@ -24,6 +24,25 @@ def get_ip():
     for prot in adapters[adapter]:
         if prot.family is socket.AF_INET:
             return prot.address
+        
+        # ethernet has priority over wifi
+    adapter = None
+    if "eth0" in adapters:
+        for addr_type in adapters["eth0"]:
+            if addr_type.family is socket.AF_INET:
+                print("using ethernet")
+                return addr_type.address
+            
+    if "wlan0" in adapters:
+        for addr_type in adapters["wlan0"]:
+            if addr_type.family is socket.AF_INET:
+                print("using wifi")
+                return addr_type.address
+    
+    if not adapter:
+        warnings.warn("Cannot find ethernet or wifi adapter! Defaulting to socket.gethostname()")
+        hostname = socket.gethostname()
+        return socket.gethostbyname(hostname)
 
 
 def recv_data(sock, timeout=None):
