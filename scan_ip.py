@@ -7,11 +7,11 @@ import random
 
 
 class scan_ip:
-    def __init__(self, ip_radius=4001, port=12321, secondary_port=12322, num_threads=500):
-        self.__port = port
+    def __init__(self, ip_radius=4001, primary_port=12321, secondary_port=12322):
+        self.__primary_port = primary_port
         self.__secondary_port = secondary_port
         self.__ip_radius = ip_radius
-        self.__num_threads = num_threads  # note that there will likely be 1 more thread than listed here
+        self.__num_scan_threads = 500
         self.__call = bytes("x gon", 'utf-8')
         self.__response = bytes("give it to ya", 'utf-8')
 
@@ -32,11 +32,12 @@ class scan_ip:
 
     def __get_socket(self):
         start_port = 10000
-        end_port = 50000
+        end_port = 60000
         s = None
         timeout = 30
         start = time.time()
         # doing this with random numbers makes it faster than being procedural
+        # like, a lot faster
         while time.time() - start < timeout:
             port = random.randint(start_port, end_port)
             try:
@@ -45,7 +46,9 @@ class scan_ip:
                 s.bind((self.ip_address, port))
                 s.settimeout(None)
                 return s
-            except:
+            except Exception as e:
+                if e is KeyboardInterrupt:
+                    raise KeyboardInterrupt
                 if s:
                     s.close()
             port += 1
@@ -82,14 +85,14 @@ class scan_ip:
 
     # todo, find a better way to chose the scanned space
     def scan_space(self):
-        num_addresses_per_thread = self.__ip_space_size // self.__num_threads
-        extra_addresses = self.__ip_space_size % self.__num_threads
+        num_addresses_per_thread = self.__ip_space_size // self.__num_scan_threads
+        extra_addresses = self.__ip_space_size % self.__num_scan_threads
         end = 0
 
         # scan through the ip space not including the extra addresses at the end
         threads = []
-        for i in range(self.__num_threads):
-            if i == self.__num_threads-1:
+        for i in range(self.__num_scan_threads):
+            if i == self.__num_scan_threads-1:
                 start = end + 1
                 end = start + extra_addresses - 1
                 ip_range = (str(start), str(end))
@@ -116,7 +119,7 @@ class scan_ip:
             s = self.__get_socket()
             s.settimeout(.05)
             try:
-                s.connect((ip, self.__port))
+                s.connect((ip, self.__primary_port))
                 try:
                     net_protocol.sendall(s, self.__call)
                     response = net_protocol.recv_data(s)
@@ -136,7 +139,7 @@ class scan_ip:
             except socket.timeout:
                 s.close()
             except OSError as err:
-                print((ip, self.__port), err)
+                print((ip, self.__primary_port), err)
 
 
 if __name__ == "__main__":

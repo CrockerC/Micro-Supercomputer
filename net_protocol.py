@@ -4,8 +4,8 @@ import threading
 import psutil
 import warnings
 import time
-import json
-import brotli
+import orjson as json
+import zstd
 
 
 def get_ip():
@@ -34,7 +34,7 @@ def recv_data(sock, timeout=None):
         return False
     lenData = struct.unpack('>I', lenData)[0]
     data = bytes(__recvall(sock, lenData))
-    data = brotli.decompress(data)
+    data = zstd.decompress(data)
     if timeout is not None:
         sock.settimeout(None)
     return data
@@ -78,15 +78,21 @@ def sendall(sock, data):
     if isinstance(data, str):
         data = bytes(data, "utf-8")
     size = len(data)
-    data = brotli.compress(data, quality=1)
+    data = zstd.compress(data, 1)
     data = addLenU(data)
     threading.Thread(target=sock.sendall, args=(data,)).start()
     return size  # the size BEFORE compression
 
 
-def send_task(sock, task_name, code, data):
+def send_task(sock, task_name, code, data, perf=True):
+    if perf:
+        start = time.perf_counter()
     data = json.dumps((task_name, code, data))
-    return sendall(sock, data)
+    data_size = sendall(sock, data)
+    if perf:
+        send_time = time.perf_counter() - start + .0000001
+        return data_size / (1024 * 1024), send_time
+    return 0, 0
 
 
 def recv_task(sock, perf=True):
@@ -95,32 +101,49 @@ def recv_task(sock, perf=True):
         start = time.perf_counter()
 
     if not data:
-        return False, False, False, False
+        return False, False, False, False, False
     size = len(data)
-    data = brotli.decompress(data)
-
+    data = zstd.decompress(data)
     name, task, data = json.loads(data)
+
     if perf:
-        recv_time = time.perf_counter() - start + .00000001
-        return name, task, data, size / (1024 * 1024) / recv_time
-    return name, task, data, 0
+        recv_time = time.perf_counter() - start + .0000001
+        return name, task, data, size / (1024 * 1024), recv_time
+    return name, task, data, 0, 0
 
 
 def send_processed(sock, data, nid, perf=True):
     if perf:
         start = time.perf_counter()
+    n = time.perf_counter()
     data = json.dumps({nid: data})
+    print(time.perf_counter() - n)
+    n = time.perf_counter()
     size = sendall(sock, data)
+    print(time.perf_counter() - n)
     if perf:
-        send_time = time.perf_counter() - start + .00000001
-        return size / (1024 * 1024) / send_time
-    return 0
+        send_time = time.perf_counter() - start + .0000001
+        return size / (1024 * 1024), send_time
+    return 0, 0
 
 
-def recv_processed(sock, timeout=None):
+def recv_processed(sock, timeout=None, perf=True):
     sock.settimeout(timeout)
-    data = recv_data(sock)
-    if data:
-        return json.loads(data)
-    else:
-        return False
+    data = recv_data_no_decompress(sock)
+    if not data:
+        return False, False, False
+
+    if perf:
+        start = time.perf_counter()
+
+    size = len(data)
+    n = time.perf_counter()
+    data = zstd.decompress(data)
+    print(time.perf_counter() - n)
+    n = time.perf_counter()
+    data = json.loads(data)
+    print(time.perf_counter() - n)
+    if perf:
+        recv_time = time.perf_counter() - start + .0000001
+        return data, size / (1024 * 1024), recv_time
+    return data, 0, 0
