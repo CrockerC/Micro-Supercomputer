@@ -140,6 +140,8 @@ def send_bash_to_nodes(bash):
 
 
 if __name__ == "__main__":
+    send_bash_to_nodes('echo "Hello World"\necho "Hello World"')
+
     data = None
     try:
         main(test_task.find_primes, data, util.inf_iter_primes, processed_handler=tmp_handler, start_number=0)

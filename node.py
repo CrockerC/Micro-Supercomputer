@@ -27,50 +27,20 @@ def main(primary_port=12321, secondary_port=12322, report_interval=1):
     secondary_sock.bind((ip_address, secondary_port))
     secondary_sock.listen(1)
 
+    # todo, make it so that if a bash is executed, it goes back to the start of the loop, not sure how to do that
     print("Waiting for connection to master")
     while True:
         try:
             master_con, secondary_con = listen(primary_sock, secondary_sock)
             ms.Process(target=report_statistics, args=(secondary_con, ip_address, report_interval), daemon=True).start()
-            threading.Thread(target=listen_bash, args=(secondary_con,)).start()
-            do_task(master_con, ip_address)
+            get_task(master_con, ip_address)
         except KeyboardInterrupt:
             print("Cancelled by user!")
             break
     # the node is now added and ready to accept tasks
 
 
-def listen_bash(sock):
-    while True:
-        command = net_protocol.recv_command(sock)
-        get_bash.get_bash(command)
-
-
-def report_statistics(sock, nid, interval=1):
-    report = report_stats.report_stats()
-    while True:
-        # note the time
-        start = time.time()
-
-        # get all of the statistics
-        stats = dict()
-        stats.update(report.get_cpu_usage())
-        stats.update(report.get_ram_usage())
-        stats.update(report.get_swap_usage())
-        stats.update(report.get_cpu_temperature())
-        stats.update(report.get_python_ram_usage())
-
-        # send the statistics to the master
-        net_protocol.send_stats(sock, stats, nid)
-
-        # note the time
-        end = time.time()
-
-        # sleep for the interval - the time it took to do the above
-        time.sleep(interval - (end - start))
-
-
-def do_task(master_con, ip):
+def get_task(master_con, ip_address):
     while True:
         t1 = time.perf_counter()
         name, task, data, data_size, data_time = net_protocol.recv_task(master_con)
@@ -84,39 +54,68 @@ def do_task(master_con, ip):
             print("Lost connection to master, listening for connection")
             break
 
-        # this takes the string code and converts it into a usable class
-        # note that this method is a huge security risk
-        # the network that the nodes run on -needs- to be isolated from the internet
-        # it also needs to contain any imports that you need
-        # they also have to be already installed, this crap doesnt bring dependencies with it
-        # it also does NOT work with multiprocessing for some reason
-        # instead of multiprocessing you have to use pathos.multiprocessing.ProcessPool, this can be used as a drop in for multiprocessing.pool
-        # note that that is the only (useful) feature of multiprocessing that carries over into pathos.multiprocessing
-        exec(task)
-        task = eval('%s' % name)
-
-        print("Got task, running")
-        if data is not None:
-            # note that the data MUST be in a list or a tuple (even if there is only one argument) (unless there is no argument)
-            try:
-                task = task(*data)
-            except TypeError:
-                raise TypeError("data MUST be either a tuple, a list, or None\n"
-                                "If you are also getting an error like this '__init__() takes 2 positional arguments but 11 were given'\n"
-                                "then you probably need to wrap your data in a list like so [data]")
+        if name == "system command":
+            get_bash.get_bash(task)
         else:
-            task = task()
+            do_task(master_con, ip_address, name, task, data, data_size, data_time)
 
-        start = time.perf_counter()
-        data = task.run()
-        print("Task completed in {:.3f}s".format(time.perf_counter()-start))
 
-        data_size, data_time = net_protocol.send_processed(master_con, data, ip)
-        if data_size and data_time:
-            print("Time spent sending processed data {:.3f}s".format(data_time))
-            print("The protocol communication send overhead went at {:.4f}MB/s for {:.4f}s".format(data_size / data_time, data_time))
+def report_statistics(sock, nid, interval=1):
+    report = report_stats.report_stats()
+    while True:
+        # note the time
+        start = time.time()
 
-        del data, task
+        # get all of the statistics
+        stats = report.get_stats()
+
+        # send the statistics to the master
+        try:
+            net_protocol.send_stats(sock, stats, nid)
+        except (ConnectionAbortedError, ConnectionResetError):
+            break
+        # note the time
+        end = time.time()
+
+        # sleep for the interval - the time it took to do the above
+        time.sleep(interval - (end - start))
+
+
+def do_task(master_con, ip_address, name, task, data, data_size, data_time):
+
+    # this takes the string code and converts it into a usable class
+    # note that this method is a huge security risk
+    # the network that the nodes run on -needs- to be isolated from the internet
+    # it also needs to contain any imports that you need
+    # they also have to be already installed, this crap doesnt bring dependencies with it
+    # it also does NOT work with multiprocessing for some reason
+    # instead of multiprocessing you have to use pathos.multiprocessing.ProcessPool, this can be used as a drop in for multiprocessing.pool
+    # note that that is the only (useful) feature of multiprocessing that carries over into pathos.multiprocessing
+    exec(task)
+    task = eval('%s' % name)
+
+    print("Got task, running")
+    if data is not None:
+        # note that the data MUST be in a list or a tuple (even if there is only one argument) (unless there is no argument)
+        try:
+            task = task(*data)
+        except TypeError:
+            raise TypeError("data MUST be either a tuple, a list, or None\n"
+                            "If you are also getting an error like this '__init__() takes 2 positional arguments but 11 were given'\n"
+                            "then you probably need to wrap your data in a list like so [data]")
+    else:
+        task = task()
+
+    start = time.perf_counter()
+    data = task.run()
+    print("Task completed in {:.3f}s".format(time.perf_counter()-start))
+
+    data_size, data_time = net_protocol.send_processed(master_con, data, ip_address)
+    if data_size and data_time:
+        print("Time spent sending processed data {:.3f}s".format(data_time))
+        print("The protocol communication send overhead went at {:.4f}MB/s for {:.4f}s".format(data_size / data_time, data_time))
+
+    del data, task
 
 
 def listen(primary_sock, secondary_sock):

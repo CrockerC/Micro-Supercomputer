@@ -55,6 +55,16 @@ class report_stats:
 
         return {"python_ram_usage": ram}
 
+    def get_stats(self):
+        stats = dict()
+        stats.update(self.get_cpu_usage())
+        stats.update(self.get_ram_usage())
+        stats.update(self.get_swap_usage())
+        stats.update(self.get_cpu_temperature())
+        stats.update(self.get_python_ram_usage())
+
+        return stats
+
 
 if __name__ == "__main__":
     import time

@@ -33,13 +33,11 @@ def get_ip():
         if "eth0" in adapters:
             for addr_type in adapters["eth0"]:
                 if addr_type.family is socket.AF_INET:
-                    print("using ethernet")
                     return addr_type.address
 
         if "wlan0" in adapters:
             for addr_type in adapters["wlan0"]:
                 if addr_type.family is socket.AF_INET:
-                    print("using wifi")
                     return addr_type.address
 
         if not adapter:
@@ -169,7 +167,12 @@ def recv_processed(sock, timeout=None, perf=True):
 
 
 def send_stats(sock, data, nid):
-    threading.Thread(target=send_processed, args=(sock, data, nid, False)).start()
+    data = json.dumps({nid: data})
+    if isinstance(data, str):
+        data = bytes(data, "utf-8")
+    data = zstd.compress(data, 1)
+    data = addLenU(data)
+    sock.sendall(data)
 
 
 def recv_stats(sock):
@@ -177,8 +180,4 @@ def recv_stats(sock):
 
 
 def send_command(sock, bash):
-    threading.Thread(target=sendall, args=(sock, bash)).start()
-
-
-def recv_command(sock):
-    return recv_data(sock)
+    threading.Thread(target=sendall, args=(sock, "system command", bash, 0, 0, 0)).start()
