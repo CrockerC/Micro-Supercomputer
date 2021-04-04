@@ -7,6 +7,7 @@ import time
 import orjson as json
 import zstd
 import sys
+import _pickle as pickle
 
 
 def get_ip():
@@ -112,7 +113,11 @@ def send_task(task_name, code, sock, data, perf=True):
         start = time.perf_counter()
 
     # todo, is wrapping this in a list good? I mean, it solves a problem i was having, but does it cause problems with generalizing the format?
-    data = json.dumps((task_name, code, [data]))
+    try:
+        data = json.dumps((task_name, code, [data]))
+    except TypeError:
+        data = pickle.dumps((task_name, code, [data]))
+        warnings.warn("Warning! pickle is very very slow compared to json! consider switching to a jsonalbe object")
     data_size = sendall(sock, data)
     if perf:
         send_time = time.perf_counter() - start + .0000001
@@ -129,8 +134,11 @@ def recv_task(sock, perf=True):
         return False, False, False, False, False
     size = len(data)
     data = zstd.decompress(data)
-    name, task, data = json.loads(data)
-
+    try:
+        name, task, data = json.loads(data)
+    except json.JSONDecodeError:
+        name, task, data = pickle.loads(data)
+        warnings.warn("Warning! pickle is very very slow compared to json! consider switching to a jsonalbe object")
     if perf:
         recv_time = time.perf_counter() - start + .0000001
         return name, task, data, size / (1024 * 1024), recv_time
@@ -140,7 +148,11 @@ def recv_task(sock, perf=True):
 def send_processed(sock, data, nid, perf=True):
     if perf:
         start = time.perf_counter()
-    data = json.dumps({nid: data})
+    try:
+        data = json.dumps({nid: data})
+    except TypeError:
+        data = pickle.dumps({nid: data})
+        warnings.warn("Warning! pickle is very very slow compared to json! consider switching to a jsonalbe object")
     size = sendall(sock, data)
     if perf:
         send_time = time.perf_counter() - start + .0000001
@@ -159,7 +171,11 @@ def recv_processed(sock, timeout=None, perf=True):
 
     size = len(data)
     data = zstd.decompress(data)
-    data = json.loads(data)
+    try:
+        data = json.loads(data)
+    except json.JSONDecodeError:
+        data = pickle.loads(data)
+        warnings.warn("Warning! pickle is very very slow compared to json! consider switching to a jsonalbe object")
     if perf:
         recv_time = time.perf_counter() - start + .0000001
         return data, size / (1024 * 1024), recv_time

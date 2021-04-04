@@ -3,7 +3,8 @@ import net_protocol
 
 
 class get_statistics_from_nodes:
-    def __init__(self, nodes):
+    def __init__(self, nodes, window_log='window.txt'):
+        self.window_log = window_log
         self.nodes = nodes
         self.stats = dict.fromkeys(nodes)
         self.threads = []
@@ -29,6 +30,8 @@ class get_statistics_from_nodes:
                     if all(self.got_ans.values()):
                         self.wait_for_ans.set()
                     self.sem.release()
+                    with open(nid + self.window_log, 'a') as f:
+                        f.write(stats[nid])
                     return
 
                 # otherwise do normal stat operations (it will be a dict)

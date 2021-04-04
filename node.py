@@ -20,6 +20,9 @@ def main(primary_port=12321, secondary_port=12322, report_interval=1):
     secondary_sock.bind((ip_address, secondary_port))
     secondary_sock.listen(1)
 
+    master_con = None
+    secondary_con = None
+
     print("Waiting for connection to master")
     while True:
         try:
@@ -30,6 +33,13 @@ def main(primary_port=12321, secondary_port=12322, report_interval=1):
             print("Cancelled by user!")
             break
         except Exception as ex:
+            if master_con:
+                if master_con.fileno() == -1:
+                    master_con.close()
+            if secondary_con:
+                if secondary_con.fileno() == -1:
+                    net_protocol.send_stats(secondary_con, "Unforseen issue caused the node to fail! Restarting! Issue:\n" + str(ex), ip_address)
+                    secondary_con.close()
             print(ex)
     # the node is now added and ready to accept tasks
 
