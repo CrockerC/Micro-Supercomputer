@@ -1,12 +1,7 @@
-import threading
-import pathos.multiprocessing as mp
 import socket
 import net_protocol
 import time
-import types
-import numpy as np
-import multiprocessing as ms
-import sympy
+import multiprocessing as mp
 import report_stats
 import get_bash
 
@@ -27,20 +22,19 @@ def main(primary_port=12321, secondary_port=12322, report_interval=1):
     secondary_sock.bind((ip_address, secondary_port))
     secondary_sock.listen(1)
 
-    # todo, make it so that if a bash is executed, it goes back to the start of the loop, not sure how to do that
     print("Waiting for connection to master")
     while True:
         try:
             master_con, secondary_con = listen(primary_sock, secondary_sock)
-            ms.Process(target=report_statistics, args=(secondary_con, ip_address, report_interval), daemon=True).start()
-            get_task(master_con, ip_address)
+            mp.Process(target=report_statistics, args=(secondary_con, ip_address, report_interval), daemon=True).start()
+            get_task(master_con, secondary_con, ip_address)
         except KeyboardInterrupt:
             print("Cancelled by user!")
             break
     # the node is now added and ready to accept tasks
 
 
-def get_task(master_con, ip_address):
+def get_task(master_con, secondary_con, ip_address):
     while True:
         t1 = time.perf_counter()
         name, task, data, data_size, data_time = net_protocol.recv_task(master_con)
@@ -55,7 +49,9 @@ def get_task(master_con, ip_address):
             break
 
         if name == "system command":
-            get_bash.get_bash(task)
+            run = get_bash.get_bash()
+            res = str(run.exec_bash(task), 'utf-8')
+            net_protocol.send_stats(secondary_con, res, ip_address)
         else:
             do_task(master_con, ip_address, name, task, data, data_size, data_time)
 
@@ -91,8 +87,9 @@ def do_task(master_con, ip_address, name, task, data, data_size, data_time):
     # it also does NOT work with multiprocessing for some reason
     # instead of multiprocessing you have to use pathos.multiprocessing.ProcessPool, this can be used as a drop in for multiprocessing.pool
     # note that that is the only (useful) feature of multiprocessing that carries over into pathos.multiprocessing
+
     exec(task)
-    task = eval('%s' % name)
+    task = eval(name)
 
     print("Got task, running")
     if data is not None:

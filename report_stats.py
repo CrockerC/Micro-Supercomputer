@@ -35,7 +35,7 @@ class report_stats:
 
     def get_cpu_temperature(self):
         if self.is_pi:
-            return {"cpu_temperature": gpiozero.CPUTemperature()}
+            return {"cpu_temperature": gpiozero.CPUTemperature().temperature}
         else:
             return {"cpu_temperature": False}
 

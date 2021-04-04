@@ -180,4 +180,4 @@ def recv_stats(sock):
 
 
 def send_command(sock, bash):
-    threading.Thread(target=sendall, args=(sock, "system command", bash, 0, 0, 0)).start()
+    threading.Thread(target=send_task, args=("system command", bash, sock, (1, 1, 1))).start()

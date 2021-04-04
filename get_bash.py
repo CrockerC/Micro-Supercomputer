@@ -1,11 +1,13 @@
 import os
 import threading
+import subprocess
 
 
 class get_bash:
-    def __init__(self, bash):
-        threading.Thread(target=self.__exec_bash, args=(bash,)).start()
+    def __init__(self):
+        pass
 
     @staticmethod
-    def __exec_bash(bash):
-        os.system(bash)
+    def exec_bash(bash):
+        sub = subprocess.Popen(bash, shell=True, stdout=subprocess.PIPE)
+        return sub.stdout.read()
