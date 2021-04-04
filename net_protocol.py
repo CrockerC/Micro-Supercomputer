@@ -172,7 +172,11 @@ def send_stats(sock, data, nid):
         data = bytes(data, "utf-8")
     data = zstd.compress(data, 1)
     data = addLenU(data)
-    sock.sendall(data)
+    try:
+        sock.sendall(data)
+    except BrokenPipeError:
+        return False
+    return True
 
 
 def recv_stats(sock):

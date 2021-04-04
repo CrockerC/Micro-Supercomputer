@@ -67,8 +67,9 @@ def report_statistics(sock, nid, interval=1):
 
         # send the statistics to the master
         try:
-            net_protocol.send_stats(sock, stats, nid)
-        except (ConnectionAbortedError, ConnectionResetError):
+            if not net_protocol.send_stats(sock, stats, nid):
+                break
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError):
             break
         # note the time
         end = time.time()

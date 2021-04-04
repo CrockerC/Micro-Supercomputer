@@ -141,8 +141,8 @@ if __name__ == "__main__":
     send_bash_to_nodes('echo "Hello World"')
 
     data = None
-    try:
-        main("find_primes.py", data, util.inf_iter_primes, processed_handler=tmp_handler, start_number=0)
-    except KeyboardInterrupt:
-        print("Cancelled by user! Bye!")
-        sys.exit(0)
+    #try:
+    #    main("find_primes.py", data, util.inf_iter_primes, processed_handler=tmp_handler, start_number=0)
+    #except KeyboardInterrupt:
+    #    print("Cancelled by user! Bye!")
+    #    sys.exit(0)
