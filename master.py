@@ -11,6 +11,7 @@ import get_statistics_from_nodes
 import send_bash
 import processed_handler
 import data_generator
+import threading
 
 if sys.platform == "win32":
     CPU_COUNT = psutil.cpu_count(logical=False)
@@ -37,7 +38,7 @@ class master:
         pass
 
     @staticmethod
-    def main_tasking(task, data, data_generator=None, processed_handler=print, handler_args=tuple(), **kwargs):
+    def main_tasking(task, data, data_generator=None, processed_handler=print, handler_args=tuple(), log_path='_sensors_log.csv', **kwargs):
         # parted is how many rounds of processing you want to split your total data into
 
         scan = scan_ip.scan_ip()
@@ -48,7 +49,9 @@ class master:
 
         get_stats = get_statistics_from_nodes.get_statistics_from_nodes(scan.get_secondary_dict())
         get_stats.start_listen()  # use get_stats.stats to get the various stats for all of the nodes
-        stat_handler = handle_stats.handle_stats(get_stats)
+        stat_handler = handle_stats.handle_stats(get_stats, log_path)
+        logger = threading.Thread(target=stat_handler.handle, args=tuple(), daemon=True)
+        logger.start()
 
         if data_generator is None:
             # note that its best to split this so that there are 16 sets of data per pi (cause 4 cores * 4 for mp pool overhead)

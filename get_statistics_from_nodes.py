@@ -1,5 +1,6 @@
 import threading
 import net_protocol
+import time
 
 
 class get_statistics_from_nodes:
@@ -42,5 +43,6 @@ class get_statistics_from_nodes:
                 else:
                     self.stats.update(stats)
                     self.update += self.update_iter
-                    if self.update >= self.last_update - 1:
+                    if self.update >= self.last_update + 1:
+                        self.last_update = self.update
                         self.update_signal.set()

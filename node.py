@@ -9,7 +9,7 @@ import warnings
 # todo, add timestamps to logs
 
 
-def main(primary_port=12321, secondary_port=12322, report_interval=1):
+def main(primary_port=12321, secondary_port=12322, report_interval=5):
     primary_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     ip_address = net_protocol.get_ip()
     primary_sock.bind((ip_address, primary_port))
@@ -66,7 +66,7 @@ def get_task(master_con, secondary_con, ip_address):
             do_task(master_con, ip_address, name, task, data, data_size, data_time)
 
 
-def report_statistics(sock, nid, interval=1):
+def report_statistics(sock, nid, interval=5):
     report = report_stats.report_stats()
     while True:
         # note the time
