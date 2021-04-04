@@ -11,6 +11,10 @@ class get_statistics_from_nodes:
         self.sem = threading.Semaphore()
         self.wait_for_ans = threading.Event()
         self.got_ans = dict.fromkeys(nodes)
+        self.update = 0
+        self.update_iter = 1 / len(self.nodes)
+        self.last_update = -1
+        self.update_signal = threading.Event()
 
     def start_listen(self):
         for nid in self.nodes:
@@ -37,3 +41,6 @@ class get_statistics_from_nodes:
                 # otherwise do normal stat operations (it will be a dict)
                 else:
                     self.stats.update(stats)
+                    self.update += self.update_iter
+                    if self.update >= self.last_update - 1:
+                        self.update_signal.set()

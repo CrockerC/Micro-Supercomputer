@@ -1,7 +1,7 @@
 import net_protocol
 import scan_ip
 import distribute_data
-import util
+import handle_stats
 import async_listen
 import psutil
 from multiprocessing.pool import ThreadPool
@@ -12,7 +12,13 @@ import send_bash
 import processed_handler
 import data_generator
 
-CPU_COUNT = psutil.cpu_count(logical=False)
+if sys.platform == "win32":
+    CPU_COUNT = psutil.cpu_count(logical=False)
+elif sys.platform == "linux":
+    CPU_COUNT = psutil.cpu_count()
+else:
+    CPU_COUNT = 4
+
 THREAD_COUNT = CPU_COUNT ** 2
 
 
@@ -42,6 +48,7 @@ class master:
 
         get_stats = get_statistics_from_nodes.get_statistics_from_nodes(scan.get_secondary_dict())
         get_stats.start_listen()  # use get_stats.stats to get the various stats for all of the nodes
+        stat_handler = handle_stats.handle_stats(get_stats)
 
         if data_generator is None:
             # note that its best to split this so that there are 16 sets of data per pi (cause 4 cores * 4 for mp pool overhead)
