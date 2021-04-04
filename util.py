@@ -1,5 +1,3 @@
-
-
 def inf_iter_primes(num_per_node=64, num_nodes=1, range_size=10000, start_number=0):
     num_per_iter = num_nodes * num_per_node
     i = start_number // range_size

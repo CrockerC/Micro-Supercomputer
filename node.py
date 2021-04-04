@@ -4,11 +4,9 @@ import time
 import multiprocessing as mp
 import report_stats
 import get_bash
+import warnings
 
 # todo, add timestamps to logs
-
-# todo, right now there is no secondary data reporting, so the secondary_con is not used
-# todo, don't delete it lol
 
 
 def main(primary_port=12321, secondary_port=12322, report_interval=1):
@@ -26,11 +24,13 @@ def main(primary_port=12321, secondary_port=12322, report_interval=1):
     while True:
         try:
             master_con, secondary_con = listen(primary_sock, secondary_sock)
-            mp.Process(target=report_statistics, args=(secondary_con, ip_address, report_interval), daemon=True).start()
+            mp.Process(target=report_statistics, args=(secondary_con, ip_address, report_interval)).start()
             get_task(master_con, secondary_con, ip_address)
         except KeyboardInterrupt:
             print("Cancelled by user!")
             break
+        except Exception as ex:
+            print(ex)
     # the node is now added and ready to accept tasks
 
 
@@ -98,9 +98,10 @@ def do_task(master_con, ip_address, name, task, data, data_size, data_time):
         try:
             task = task(*data)
         except TypeError:
-            raise TypeError("data MUST be either a tuple, a list, or None\n"
-                            "If you are also getting an error like this '__init__() takes 2 positional arguments but 11 were given'\n"
-                            "then you probably need to wrap your data in a list like so [data]")
+            warnings.warn("data MUST be either a tuple, a list, or None\n"
+                          "If you are also getting an error like this '__init__() takes 2 positional arguments but 11 were given'\n"
+                          "then you probably need to wrap your data in a list like so [data]")
+            return
     else:
         task = task()
 

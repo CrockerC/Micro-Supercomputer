@@ -1,6 +1,5 @@
 import threading
 import net_protocol
-import sys
 
 
 class get_statistics_from_nodes:
