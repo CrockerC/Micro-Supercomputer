@@ -109,10 +109,12 @@ def sendall(sock, data):
     return size  # the size BEFORE compression
 
 
-def send_task(sock, task_name, code, data, perf=True):
+def send_task(task_name, code, sock, data, perf=True):
     if perf:
         start = time.perf_counter()
-    data = json.dumps((task_name, code, data))
+
+    # todo, is wrapping this in a list good? I mean, it solves a problem i was having, but does it cause problems with generalizing the format?
+    data = json.dumps((task_name, code, [data]))
     data_size = sendall(sock, data)
     if perf:
         send_time = time.perf_counter() - start + .0000001
@@ -164,3 +166,19 @@ def recv_processed(sock, timeout=None, perf=True):
         recv_time = time.perf_counter() - start + .0000001
         return data, size / (1024 * 1024), recv_time
     return data, 0, 0
+
+
+def send_stats(sock, data, nid):
+    threading.Thread(target=send_processed, args=(sock, data, nid, False)).start()
+
+
+def recv_stats(sock):
+    return recv_processed(sock, perf=False)[0]
+
+
+def send_command(sock, bash):
+    threading.Thread(target=sendall, args=(sock, bash)).start()
+
+
+def recv_command(sock):
+    return recv_data(sock)

@@ -6,6 +6,11 @@ import util
 import async_listen
 import inspect
 import psutil
+from multiprocessing.pool import ThreadPool
+import functools
+import sys
+import get_statistics
+import send_bash
 
 CPU_COUNT = psutil.cpu_count(logical=False)
 THREAD_COUNT = CPU_COUNT ** 2
@@ -13,14 +18,7 @@ THREAD_COUNT = CPU_COUNT ** 2
 
 # todo, make better comments before i forget how it all works
 
-# todo, add ability to measure the out/in speed of the network
-# todo, give master a master control over the fans of the nodes
-# todo, have nodes report cpu/ram/network/disk usage back to the master
 # todo, have master be able to tell the nodes to restart
-# todo, have the nodes and master be able to detect ram usage? this may not be practical
-# todo, implementing all that stuff will require me to either establish multiple connections with each pi
-# todo, or create a more detailed network protocol that allows one socket to be used for every utility (which is more expandable, but at the same time much more effort)
-# todo, a third option could be to use one socket for the main task, then one for all secondary tasks like ram reporting (which seems to be the best solution)
 
 # todo, give abiliy to install libraries that arent already in the node. This might be somewhat difficult and needing regex
 
@@ -40,10 +38,14 @@ THREAD_COUNT = CPU_COUNT ** 2
 def main(task, data, data_generator=None, processed_handler=print, **kwargs):
     # parted is how many rounds of processing you want to split your total data into
 
-    nodes = scan_ip.scan_ip().scan_space()
+    scan = scan_ip.scan_ip()
+    nodes = scan.scan_space()
     if nodes == {}:
         print("The master could not find any nodes, quitting")
-        return
+        sys.exit(0)
+
+    get_stats = get_statistics.get_statistics(scan.get_secondary_dict())
+    get_stats.start_listen()  # use get_stats.stats to get the various stats for all of the nodes
 
     if data_generator is None:
         # note that its best to split this so that there are 16 sets of data per pi (cause 4 cores * 4 for mp pool overhead)
@@ -67,9 +69,15 @@ def main(task, data, data_generator=None, processed_handler=print, **kwargs):
         # in v2 itll do it asynchronously, although idk how ill handle ordering
         sizes = []
         times = []
-        # todo, thread this, either with a thread pool or a special object
-        for node, datum in zip(nodes, list(little_data)):
-            data_size, data_time = net_protocol.send_task(nodes[node], task_name, task, [datum])
+
+        # todo, having this be threaded breaks the time measurements
+        # todo, since the json isnt threadable, maybe its a better idea to use multiprocesing
+        pool = ThreadPool()
+        send_partial = functools.partial(net_protocol.send_task, task_name, task)
+        results = list(pool.starmap(send_partial, zip(nodes.values(), list(little_data))))
+
+        for result in results:
+            data_size, data_time = result
             sizes.append(data_size)
             times.append(data_time)
 
@@ -87,7 +95,7 @@ def main(task, data, data_generator=None, processed_handler=print, **kwargs):
         sizes = []
         times = []
 
-        # todo, these measurements are wrong, since its threaded but its acting like its not
+        # todo, these time measurements are wrong, since its threaded
         for processed, node in listen.loop():
             processed, data_size, data_time = processed
             if not processed:
@@ -99,12 +107,14 @@ def main(task, data, data_generator=None, processed_handler=print, **kwargs):
                 times.append(data_time)
                 processed_handler(processed, node)
 
+        # print(get_stats.stats)
+
         for de in del_list:
             del nodes[de]
 
         if len(nodes.keys()) == 0:
             print("There are no nodes connected to the master, quitting")
-            return
+            sys.exit(0)
 
         avg_size = sum(sizes) / len(sizes)
         avg_time = sum(times) / len(times)
@@ -117,9 +127,22 @@ def tmp_handler(processed, node):
     print(processed[node][-1], len(processed[node]))
 
 
+def send_bash_to_nodes(bash):
+    scan = scan_ip.scan_ip()
+    nodes = scan.scan_space()
+    if nodes == {}:
+        print("The master could not find any nodes, quitting")
+        sys.exit(0)
+
+    nodes = scan.get_secondary_dict()
+    send_shit = send_bash.send_bash(nodes)
+    send_shit.send_command(bash)
+
+
 if __name__ == "__main__":
     data = None
     try:
         main(test_task.find_primes, data, util.inf_iter_primes, processed_handler=tmp_handler, start_number=0)
     except KeyboardInterrupt:
         print("Cancelled by user! Bye!")
+        sys.exit(0)

@@ -5,8 +5,10 @@ import net_protocol
 import time
 import types
 import numpy as np
-import multiprocess as ms
+import multiprocessing as ms
 import sympy
+import report_stats
+import get_bash
 
 # todo, add timestamps to logs
 
@@ -14,7 +16,7 @@ import sympy
 # todo, don't delete it lol
 
 
-def main(primary_port=12321, secondary_port=12322):
+def main(primary_port=12321, secondary_port=12322, report_interval=1):
     primary_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     ip_address = net_protocol.get_ip()
     primary_sock.bind((ip_address, primary_port))
@@ -29,11 +31,43 @@ def main(primary_port=12321, secondary_port=12322):
     while True:
         try:
             master_con, secondary_con = listen(primary_sock, secondary_sock)
+            ms.Process(target=report_statistics, args=(secondary_con, ip_address, report_interval), daemon=True).start()
+            threading.Thread(target=listen_bash, args=(secondary_con,)).start()
             do_task(master_con, ip_address)
         except KeyboardInterrupt:
             print("Cancelled by user!")
             break
     # the node is now added and ready to accept tasks
+
+
+def listen_bash(sock):
+    while True:
+        command = net_protocol.recv_command(sock)
+        get_bash.get_bash(command)
+
+
+def report_statistics(sock, nid, interval=1):
+    report = report_stats.report_stats()
+    while True:
+        # note the time
+        start = time.time()
+
+        # get all of the statistics
+        stats = dict()
+        stats.update(report.get_cpu_usage())
+        stats.update(report.get_ram_usage())
+        stats.update(report.get_swap_usage())
+        stats.update(report.get_cpu_temperature())
+        stats.update(report.get_python_ram_usage())
+
+        # send the statistics to the master
+        net_protocol.send_stats(sock, stats, nid)
+
+        # note the time
+        end = time.time()
+
+        # sleep for the interval - the time it took to do the above
+        time.sleep(interval - (end - start))
 
 
 def do_task(master_con, ip):
