@@ -87,7 +87,7 @@ class master:
 
             avg_size = sum(sizes) / len(sizes)
             avg_time = sum(times) / len(times)
-            print("The protocol communication send overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / avg_time, sum(times)))
+            #print("The protocol communication send overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / avg_time, sum(times)))
             # free up ram
             del little_data
 
@@ -122,7 +122,7 @@ class master:
 
             avg_size = sum(sizes) / len(sizes)
             avg_time = sum(times) / len(times)
-            print("The protocol communication recv overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / avg_time, sum(times)))
+            #print("The protocol communication recv overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / avg_time, sum(times)))
 
         input("Press enter to exit")
 

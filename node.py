@@ -143,7 +143,7 @@ def listen(primary_sock, secondary_sock):
                 connected = True
                 print("Connected to master")
             else:
-                master_con.exit()
+                master_con.close()
                 print("Incoming connection failed, waiting for new connection")
         except:
             if master_con:

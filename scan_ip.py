@@ -43,6 +43,7 @@ class scan_ip:
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.settimeout(.01)
+                
                 s.bind((self.ip_address, port))
                 s.settimeout(None)
                 return s
@@ -56,7 +57,7 @@ class scan_ip:
 
     def __get_lan_type(self):
         # i discovered that when using a vpn this doesnt work very well....
-
+ 
         start = ipaddress.ip_address(self.ip_address) - self.__ip_radius
         end = ipaddress.ip_address(self.ip_address) + self.__ip_radius
 
@@ -72,6 +73,10 @@ class scan_ip:
             # don't bother with the truncating when there are only 65k addresses
             self.ip_range = ('192.168.0.0', '192.168.255.255')
             self.__ip_space_size = 65536
+        elif self.__ip_type == '169':
+            self.ip_range = ('169.254.1.0', '169.254.254.255')
+            self.__ip_space_size = int(ipaddress.ip_address('169.254.254.255')) - int(ipaddress.ip_address('169.254.1.0')) 
+
         else:
             raise ValueError("LAN address space not found!")
 
@@ -117,8 +122,9 @@ class scan_ip:
         ip_range = self.__ip_range_generator(*ip_range)
         for ip in ip_range:
             s = self.__get_socket()
-            s.settimeout(.05)
+            s.settimeout(.1)
             try:
+                #todo, for some reason the sockets dont work reliably when just hooked up to eachother via ethernet switch, idk if a router is needed or if an internet connection is needed
                 s.connect((ip, self.__primary_port))
                 try:
                     net_protocol.sendall(s, self.__call)
@@ -129,7 +135,7 @@ class scan_ip:
                     self.primary_node_dict.update({ip: s})
 
                     s = self.__get_socket()
-                    s.settimeout(.05)
+                    s.settimeout(.1)
                     s.connect((ip, self.__secondary_port))
 
                     self.secondary_node_dict.update({ip: s})

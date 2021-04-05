@@ -41,6 +41,7 @@ class get_statistics_from_nodes:
 
                 # otherwise do normal stat operations (it will be a dict)
                 else:
+                    # print(stats)
                     self.stats.update(stats)
                     self.update += self.update_iter
                     if self.update >= self.last_update + 1:
