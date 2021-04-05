@@ -65,6 +65,7 @@ class master:
         with open(task, "r") as f:
             task = f.read()
 
+        pool = ThreadPool()
         for little_data in big_data:
             little_data = distribute_data.distribute_data(len(nodes.keys()), little_data)
             little_data = little_data.split()
@@ -76,7 +77,6 @@ class master:
 
             # todo, having this be threaded breaks the time measurements
             # todo, since the json isnt threadable, maybe its a better idea to use multiprocesing
-            pool = ThreadPool()
             send_partial = functools.partial(net_protocol.send_task, task_name, task)
             results = list(pool.starmap(send_partial, zip(nodes.values(), list(little_data))))
 
