@@ -1,6 +1,5 @@
 import threading
 import net_protocol
-import time
 
 
 class get_statistics_from_nodes:
@@ -19,7 +18,7 @@ class get_statistics_from_nodes:
 
     def start_listen(self):
         for nid in self.nodes:
-            thread = threading.Thread(target=self.__get_node_stats, args=(nid,), daemon=True)
+            thread = threading.Thread(target=self.__get_node_stats, args=(nid,))
             thread.start()
             self.threads.append(thread)
 
@@ -41,7 +40,6 @@ class get_statistics_from_nodes:
 
                 # otherwise do normal stat operations (it will be a dict)
                 else:
-                    # print(stats)
                     self.stats.update(stats)
                     self.update += self.update_iter
                     if self.update >= self.last_update + 1:

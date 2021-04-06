@@ -12,6 +12,7 @@ import send_bash
 import processed_handler
 import data_generator
 import threading
+import time
 
 if sys.platform == "win32":
     CPU_COUNT = psutil.cpu_count(logical=False)
@@ -50,7 +51,7 @@ class master:
         get_stats = get_statistics_from_nodes.get_statistics_from_nodes(scan.get_secondary_dict())
         get_stats.start_listen()  # use get_stats.stats to get the various stats for all of the nodes
         stat_handler = handle_stats.handle_stats(get_stats, log_path)
-        logger = threading.Thread(target=stat_handler.handle, args=tuple(), daemon=True)
+        logger = threading.Thread(target=stat_handler.handle, args=tuple())
         logger.start()
 
         if data_generator is None:
@@ -80,6 +81,7 @@ class master:
             send_partial = functools.partial(net_protocol.send_task, task_name, task)
             results = list(pool.starmap(send_partial, zip(nodes.values(), list(little_data))))
 
+            start = time.time()
             for result in results:
                 data_size, data_time = result
                 sizes.append(data_size)
@@ -87,7 +89,7 @@ class master:
 
             avg_size = sum(sizes) / len(sizes)
             avg_time = sum(times) / len(times)
-            #print("The protocol communication send overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / avg_time, sum(times)))
+            print("The protocol communication send overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / avg_time, sum(times)))
             # free up ram
             del little_data
 
@@ -111,6 +113,7 @@ class master:
                     times.append(data_time)
                     processed_handler(processed, node, *handler_args)
 
+            print("The nodes spent {:.4f}s processing the data".format(time.time()-start))
             # print(get_stats.stats)
 
             for de in del_list:
@@ -122,7 +125,7 @@ class master:
 
             avg_size = sum(sizes) / len(sizes)
             avg_time = sum(times) / len(times)
-            #print("The protocol communication recv overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / avg_time, sum(times)))
+            print("The protocol communication recv overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / avg_time, sum(times)))
 
         input("Press enter to exit")
 
@@ -155,7 +158,7 @@ if __name__ == "__main__":
     master_node.send_bash_to_nodes('echo "Hello World"')
 
     try:
-        master_node.main_tasking("node_task.py", None, data_generator.data_generator, processed_handler=processed_handler.processed_handler, start_number=0)
+        master_node.main_tasking("node_task.py", None, data_generator.data_generator, processed_handler=processed_handler.processed_handler, start_number=10**100000000)
     except KeyboardInterrupt:
         print("Cancelled by user! Bye!")
         sys.exit(0)
