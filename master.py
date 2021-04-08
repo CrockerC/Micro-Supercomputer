@@ -32,8 +32,6 @@ THREAD_COUNT = CPU_COUNT ** 2
 # todo, strftime("[%m/%d/%Y %H:%M:%S]", time.localtime()) gives this [04/02/2021 00:53:24]
 # todo, there is also probably a logging library
 
-# todo, add pickling as a backup to json, also add a warning saying that pickle is slow as fuck
-
 class master:
     def __init__(self):
         pass
@@ -155,10 +153,10 @@ def tmp_handler(processed, node):
 
 if __name__ == "__main__":
     master_node = master()
-    master_node.send_bash_to_nodes('echo "Hello World"')
+    # master_node.send_bash_to_nodes('echo "Hello World"')
 
     try:
-        master_node.main_tasking("node_task.py", None, data_generator.data_generator, processed_handler=processed_handler.processed_handler, start_number=10**100000000)
+        master_node.main_tasking("node_task.py", None, data_generator.data_generator, processed_handler=processed_handler.processed_handler, start_number=2**4096)
     except KeyboardInterrupt:
         print("Cancelled by user! Bye!")
         sys.exit(0)

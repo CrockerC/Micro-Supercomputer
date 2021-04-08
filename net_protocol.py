@@ -102,7 +102,10 @@ def sendall(sock, data):
     if isinstance(data, str):
         data = bytes(data, "utf-8")
     size = len(data)
-    data = zstd.compress(data, 1)
+    try:
+        data = zstd.compress(data, 1)
+    except OverflowError:
+        pass
     data = addLenU(data)
     threading.Thread(target=sock.sendall, args=(data,)).start()
     return size  # the size BEFORE compression
@@ -133,7 +136,10 @@ def recv_task(sock, perf=True):
     if not data:
         return False, False, False, False, False
     size = len(data)
-    data = zstd.decompress(data)
+    try:
+        data = zstd.decompress(data)
+    except RuntimeError:  # if its not compressed, skip trying to decompress it
+        pass
     try:
         name, task, data = json.loads(data)
     except json.JSONDecodeError:
@@ -170,7 +176,10 @@ def recv_processed(sock, timeout=None, perf=True):
         start = time.perf_counter()
 
     size = len(data)
-    data = zstd.decompress(data)
+    try:
+        data = zstd.decompress(data)
+    except RuntimeError:
+        pass
     try:
         data = json.loads(data)
     except json.JSONDecodeError:
