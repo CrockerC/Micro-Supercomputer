@@ -5,6 +5,7 @@ import processed_handler
 
 
 # todo, doing keyboard interrupt doesnt work right
+# todo, add argument for the data generator
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(
         description='Micro-Supercomputer master control')
