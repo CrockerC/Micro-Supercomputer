@@ -99,7 +99,7 @@ def do_task(master_con, ip_address, name, task, data, data_size, data_time):
     # instead of multiprocessing you have to use pathos.multiprocessing.ProcessPool, this can be used as a drop in for multiprocessing.pool
     # note that that is the only (useful) feature of multiprocessing that carries over into pathos.multiprocessing
 
-    exec(task)
+    exec(task)  # todo, is this line causing a memory leak?
     task = eval(name)
 
     print("Got task, running")
