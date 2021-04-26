@@ -121,7 +121,6 @@ def do_task(master_con, ip_address, name, task, data, data_size, data_time):
 
     data_size, data_time = net_protocol.send_processed(master_con, data, ip_address)
     if data_size and data_time:
-        print("Time spent sending processed data {:.3f}s".format(data_time))
         print("The protocol communication send overhead went at {:.4f}MB/s for {:.4f}s".format(data_size / data_time, data_time))
 
     del data, task
