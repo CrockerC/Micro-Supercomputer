@@ -8,6 +8,7 @@ import orjson as json
 import zstd
 import sys
 import _pickle as pickle
+import traceback
 
 
 def get_ip():
@@ -107,8 +108,20 @@ def sendall(sock, data):
     except OverflowError:
         pass
     data = addLenU(data)
-    threading.Thread(target=sock.sendall, args=(data,)).start()
+    threading.Thread(target=send_with_exception, args=(sock, data, traceback.extract_stack())).start()
     return size  # the size BEFORE compression
+
+
+def send_with_exception(socket, data, stack):
+    def _format_frame(frame):
+        return '  File "{}", line {} in {}'.format(frame.filename, frame.lineno, frame.name)
+
+    try:
+        socket.sendall(data)
+    except Exception as ex:
+        stack = "\n".join([_format_frame(frame) for frame in stack])
+        socket.close()
+        raise Exception(stack + '\n' + str(ex))
 
 
 def send_task(task_name, code, sock, data, perf=True):
