@@ -85,7 +85,9 @@ def report_statistics(sock, nid, interval=5):
         end = time.time()
 
         # sleep for the interval - the time it took to do the above
-        time.sleep(interval - (end - start))
+        t = interval - (end-start)
+        if t > 0:
+            time.sleep(interval - (end - start))
 
 
 def do_task(master_con, ip_address, name, task, data, data_size, data_time):
@@ -138,7 +140,9 @@ def listen(primary_sock, secondary_sock):
             mess = net_protocol.recv_data(master_con)
             if mess == call:
                 net_protocol.sendall(master_con, response)
+                secondary_sock.settimeout(.1)
                 secondary_con, addr = secondary_sock.accept()
+                secondary_sock.settimeout(None)
                 connected = True
                 print("Connected to master")
             else:

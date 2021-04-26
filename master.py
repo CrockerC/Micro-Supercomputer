@@ -46,6 +46,8 @@ class master:
             print("The master could not find any nodes, quitting")
             sys.exit(0)
 
+        print("Connected to", len(nodes), "nodes")
+
         get_stats = get_statistics_from_nodes.get_statistics_from_nodes(scan.get_secondary_dict())
         get_stats.start_listen()  # use get_stats.stats to get the various stats for all of the nodes
         stat_handler = handle_stats.handle_stats(get_stats, log_path)
@@ -147,16 +149,12 @@ class master:
             nodes[node].close()
 
 
-def tmp_handler(processed, node):
-    print(processed[node][-1], len(processed[node]))
-
-
 if __name__ == "__main__":
     master_node = master()
     # master_node.send_bash_to_nodes('echo "Hello World"')
 
     try:
-        master_node.main_tasking("node_task.py", None, data_generator.data_generator, processed_handler=processed_handler.processed_handler, start_number=2**4096)
+        master_node.main_tasking("node_task.py", None, data_generator.data_generator, processed_handler=processed_handler.processed_handler, start_number=2**32)
     except KeyboardInterrupt:
         print("Cancelled by user! Bye!")
         sys.exit(0)

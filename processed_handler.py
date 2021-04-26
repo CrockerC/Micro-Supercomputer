@@ -4,4 +4,4 @@ def processed_handler(processed, node):
         disp = processed[node][-1], len(processed[node])
     except IndexError:
         disp = processed[node]
-    print(disp)
+    print(*disp)

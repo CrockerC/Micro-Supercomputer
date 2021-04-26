@@ -124,7 +124,6 @@ class scan_ip:
             s = self.__get_socket()
             s.settimeout(.1)
             try:
-                #todo, for some reason the sockets dont work reliably when just hooked up to eachother via ethernet switch, idk if a router is needed or if an internet connection is needed
                 s.connect((ip, self.__primary_port))
                 try:
                     net_protocol.sendall(s, self.__call)
@@ -141,7 +140,7 @@ class scan_ip:
                     self.secondary_node_dict.update({ip: s})
                     print("Connected to node {}".format(ip))
                 else:
-                    raise ValueError("Wrong response from node! Not adding to list!")
+                    raise ValueError("Wrong response from node! Not adding to list!, response was", response)
             except socket.timeout:
                 s.close()
             except OSError as err:
