@@ -4,10 +4,11 @@ import net_protocol
 
 
 class multipleListens:
-    def __init__(self, socks: typing.Dict):
+    def __init__(self, socks: typing.Dict, timer=None):
         self.socks = socks
         self.listens = dict()
         self.signalRemove = threading.Event()
+        self.timer = timer
 
         self.value = {}
         self.got = {}
@@ -47,7 +48,7 @@ class multipleListens:
         if self.close.isSet():
             return
         try:
-            data = net_protocol.recv_processed(sock)
+            data = net_protocol.recv_processed(sock, timer=self.timer)
         except Exception as ext:
             if ext == KeyboardInterrupt:
                 raise KeyboardInterrupt

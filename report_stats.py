@@ -26,12 +26,12 @@ class report_stats:
     @staticmethod
     def get_ram_usage():
         ram = psutil.virtual_memory()
-        return {"ram": {"total": ram.total, "used": ram.used, "available": ram.available, "percent": ram.percent}}
+        return {"ram": {"total": ram.__total, "used": ram.used, "available": ram.available, "percent": ram.percent}}
 
     @staticmethod
     def get_swap_usage():
         ram = psutil.swap_memory()
-        return {"swap": {"total": ram.total, "used": ram.used, "available": ram.free, "percent": ram.percent}}
+        return {"swap": {"total": ram.__total, "used": ram.used, "available": ram.free, "percent": ram.percent}}
 
     def get_cpu_temperature(self):
         if self.is_pi:

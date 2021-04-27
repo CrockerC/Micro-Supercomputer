@@ -124,9 +124,9 @@ def send_with_exception(socket, data, stack):
         raise Exception(stack + '\n' + str(ex))
 
 
-def send_task(task_name, code, sock, data, perf=True):
-    if perf:
-        start = time.perf_counter()
+def send_task(task_name, code, timer, sock, data):
+    if timer:
+        timer.start(threading.get_ident())
 
     # todo, is wrapping this in a list good? I mean, it solves a problem i was having, but does it cause problems with generalizing the format?
     try:
@@ -135,10 +135,10 @@ def send_task(task_name, code, sock, data, perf=True):
         data = pickle.dumps((task_name, code, [data]))
         warnings.warn("Warning! pickle is very very slow compared to json! consider switching to a jsonalbe object")
     data_size = sendall(sock, data)
-    if perf:
-        send_time = time.perf_counter() - start + .0000001
-        return data_size / (1024 * 1024), send_time
-    return 0, 0
+    if timer:
+        timer.pause(threading.get_ident())
+        return data_size / (1024 * 1024)
+    return 0
 
 
 def recv_task(sock, perf=True):
@@ -179,14 +179,14 @@ def send_processed(sock, data, nid, perf=True):
     return 0, 0
 
 
-def recv_processed(sock, timeout=None, perf=True):
+def recv_processed(sock, timeout=None, timer=None):
     sock.settimeout(timeout)
     data = recv_data_no_decompress(sock)
     if not data:
-        return False, False, False
+        return False, False
 
-    if perf:
-        start = time.perf_counter()
+    if timer:
+        timer.start(threading.get_ident())
 
     size = len(data)
     try:
@@ -198,10 +198,10 @@ def recv_processed(sock, timeout=None, perf=True):
     except json.JSONDecodeError:
         data = pickle.loads(data)
         warnings.warn("Warning! pickle is very very slow compared to json! consider switching to a jsonalbe object")
-    if perf:
-        recv_time = time.perf_counter() - start + .0000001
-        return data, size / (1024 * 1024), recv_time
-    return data, 0, 0
+    if timer:
+        timer.pause(threading.get_ident())
+        return data, size / (1024 * 1024)
+    return data, 0
 
 
 def send_stats(sock, data, nid):
@@ -218,7 +218,7 @@ def send_stats(sock, data, nid):
 
 
 def recv_stats(sock):
-    return recv_processed(sock, perf=False)[0]
+    return recv_processed(sock)[0]
 
 
 def send_command(sock, bash):

@@ -13,6 +13,7 @@ import processed_handler
 import data_generator
 import threading
 import time
+import my_timer
 
 if sys.platform == "win32":
     CPU_COUNT = psutil.cpu_count(logical=False)
@@ -31,6 +32,8 @@ THREAD_COUNT = CPU_COUNT ** 2
 # todo, implement timestamps and logging for everything
 # todo, strftime("[%m/%d/%Y %H:%M:%S]", time.localtime()) gives this [04/02/2021 00:53:24]
 # todo, there is also probably a logging library
+
+# todo, make it so that the nodes can kill their job if they lose connection to the master
 
 class master:
     def __init__(self):
@@ -74,22 +77,19 @@ class master:
             # send each node's data to it synchronously
             # in v2 itll do it asynchronously, although idk how ill handle ordering
             sizes = []
-            times = []
 
-            # todo, having this be threaded breaks the time measurements
-            # todo, since the json isnt threadable, maybe its a better idea to use multiprocesing
-            send_partial = functools.partial(net_protocol.send_task, task_name, task)
+            timer = my_timer.my_timer()
+            send_partial = functools.partial(net_protocol.send_task, task_name, task, timer)
             results = list(pool.starmap(send_partial, zip(nodes.values(), list(little_data))))
 
             start = time.time()
             for result in results:
-                data_size, data_time = result
+                data_size = result
                 sizes.append(data_size)
-                times.append(data_time)
 
             avg_size = sum(sizes) / len(sizes)
-            avg_time = sum(times) / len(times)
-            print("The protocol communication send overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / avg_time, sum(times)))
+            send_time = timer.time() + 0.00000000000001
+            print("The protocol communication send overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / send_time, send_time))
             # free up ram
             del little_data
 
@@ -97,20 +97,18 @@ class master:
             # get the results from each node asynchronously
             # but it also gets them in the same order they were sent out in
             # i know, its trippy lol
-            listen = async_listen.multipleListens(nodes.copy())
+            timer = my_timer.my_timer()
+            listen = async_listen.multipleListens(nodes.copy(), timer)
             sizes = []
-            times = []
 
-            # todo, these time measurements are wrong, since its threaded
             for processed, node in listen.loop():
-                processed, data_size, data_time = processed
+                processed, data_size = processed
                 if not processed:
                     print("Lost connection to node '{}'".format(node))
                     nodes[node].close()
                     del_list.append(node)
                 else:
                     sizes.append(data_size)
-                    times.append(data_time)
                     processed_handler(processed, node, *handler_args)
 
             print("The nodes spent {:.4f}s processing the data".format(time.time()-start))
@@ -124,8 +122,8 @@ class master:
                 sys.exit(0)
 
             avg_size = sum(sizes) / len(sizes)
-            avg_time = sum(times) / len(times)
-            print("The protocol communication recv overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / avg_time, sum(times)))
+            recv_time = timer.time() + 0.00000000000001
+            print("The protocol communication recv overhead went at {:.4f}MB/s for {:.4f}s".format(avg_size / recv_time, recv_time))
 
         input("Press enter to exit")
 
